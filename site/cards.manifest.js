@@ -31,6 +31,20 @@ export const cards = [
     title: '听云屿',
     act: '第三弹',
   },
+  {
+    id: '005',
+    route: '/005/index.html',
+    edition: 'No.005',
+    title: '鹊渡枝',
+    act: '第五弹',
+  },
+  {
+    id: '006',
+    route: '/006/index.html',
+    edition: 'No.006',
+    title: '塵燼',
+    act: '第六弹',
+  },
 ];
 
 export default cards;

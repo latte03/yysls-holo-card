@@ -1,0 +1,20 @@
+{
+  "mode": "holographic",
+  "title": "鹊渡枝",
+  "subtitle": "传说 · SSR",
+  "technique": "百业 · 初觉 · 流派 · 鸢钧",
+  "edition": "No.005",
+  "collection": "燕云十六声 · 典藏闪卡 第五弹",
+  "description": "燕云十六声典藏系列第五弹 · 传说 SSR No.005。",
+  "font": "C:/Windows/Fonts/simsun.ttc",
+  "parameters": {
+     "subjectScale": 1.0,
+    "subjectDepth": 0.55,
+    "backgroundDepth": -0.45,
+    "foil": 1.0,
+    "particles": 1.0,
+    "glow": 0.85
+  },
+  "safeArea": {"scale": 1.0, "offset": [0, 0]}
+
+}
