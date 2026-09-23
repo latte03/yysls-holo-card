@@ -16,12 +16,17 @@ the fit trustworthy. Identity is always a candidate so a trace that is already
 registered stays untouched.
 """
 import json
+import sys
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
-ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import card_root, config, delivery
+
+ROOT = card_root()
+CFG = config(ROOT)
 SRC = ROOT / 'assets'
 DELIVERY = ROOT / 'source'
 W, H = 1024, 1536
@@ -40,7 +45,7 @@ def _load_subject():
 
 
 def _load_ink():
-    line = Image.open(DELIVERY / 'lineart_src.png').convert('L')
+    line = Image.open(DELIVERY / delivery(CFG, 'lineart')).convert('L')
     la = np.asarray(line, dtype=np.float64)
     return np.where(la < 140, (255.0 - la) / 255.0, 0.0)
 
@@ -170,7 +175,7 @@ def main():
     proof(subject_img, registered, out / 'preview-register.png')
 
     record = {
-        'source': 'source/lineart_src.png',
+        'source': f'source/{delivery(CFG, "lineart")}',
         'transform': {'scale': round(scale, 4), 'dx': dx, 'dy': dy},
         'ncc': round(score, 5),
         'residual_px': {'chosen': round(res_fit, 2), 'identity': round(res_identity, 2)},

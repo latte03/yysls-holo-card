@@ -15,14 +15,16 @@
 
 ### 1. 卡是数据，站是站点
 
-`cards/<id>-<name>/` 是单卡的数据管线（源素材、构建产物、Blender 工程、脚本）；
+`cards/<id>-<name>/` 是单卡的数据管线（源素材、构建产物、Blender 工程）；
 `site/` 是网站本体。**网站永远不隶属于某一张卡**——历史上整站曾塞在 `cards/001-buran/web/` 里，
 加第二张卡时就成了反直觉的结构，已重构。别再把它挪回去。
 
 ### 2. 声明一张卡只有一处
 
-`site/cards.manifest.js`。Vite 多页入口、首页链接、页头卡序切换全部由它驱动。
-加新卡 = manifest 加一条 + 建 `site/<id>/` 目录，**不要改任何 HTML**。
+`site/cards.manifest.js`。Vite 多页入口、首页链接、页头卡序切换全部由它驱动，
+每张卡的壳页 `site/<id>/index.html` 也是由它扇出的——`pnpm gen:pages`（`dev`/`build` 会自动前置）
+按清单把 `site/card.template.html` 逐字节复制成各卡壳页。**加新卡 = manifest 加一条**，
+不要改任何 HTML，也不要手写 `site/<id>/index.html`（那是产物，已 gitignore）。
 
 ### 3. 两份配置，别混
 
@@ -36,13 +38,18 @@
 ## 路径硬事实（错一个就 404 或构建失败）
 
 - 卡壳必须在 `site/<id>/index.html`，**不能**是 `site/cards/<id>/`——Vite 按目录结构服务，
-  只有根下的 `<id>/` 才对应 `/<id>/` 路由。
+  只有根下的 `<id>/` 才对应 `/<id>/` 路由。这些壳页是 `gen-card-pages.mjs` 生成的产物：
+  Vite 必须把每页 HTML 当作**构建输入**才能把 `/viewer/app.js` 改写成带 hash 的
+  `/assets/app-*.js`，所以不能跳过 `site/<id>/` 直接往 `dist/` 写。
 - `public/` 下必须再有 `assets/` 一层：`public/<id>/` 会直接挂成 `/<id>/`，和卡路由冲突。
   正确是 `public/assets/<id>/` → `/assets/<id>/`。
 - 路由一律写**显式 `index.html`**（`/001/index.html`）：托管平台不保证解析裸目录路径。
 - `prepare_site` 的 `webDirectory` 是 **`site/dist`**（相对 `projectRoot`，即仓库根），不是 `dist`。
-- 脚本位置决定 `ROOT`：001/002 的脚本在卡根目录（`Path(__file__).resolve().parent`），
-  003 起放 `scripts/` 子目录（`...parent.parent`）。**以文件里实际写的为准，别照抄。**
+- 建卡脚本只有一份，在 `tools/card_pipeline/`，用 `--card cards/<id>-<name>` 传卡目录；
+  卡级参数（`darken`、`delivery` 交付文件名）读该卡的 `card-config.json`。新卡不再拷脚本。
+  **例外是 001**：它的 `prep_layers.py` 有裁切 6% 边 + 下移 110px 的专属逻辑，
+  已定稿且不再重跑，脚本就留在 `cards/001-buran/` 原地，别并入公共包。
+  001 的 `darken` 仍写死在它自己脚本里（0.74），config 里那份 `darken` 只是记录，别指望公共脚本改它。
 
 ## 环境
 

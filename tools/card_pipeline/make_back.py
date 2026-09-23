@@ -1,9 +1,13 @@
 """Compose the transparent card-back layer: gold double border + 燕云十六声 logo + edition."""
 import json
+import sys
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
-ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from common import card_root
+
+ROOT = card_root()
 cfg = json.loads((ROOT / 'card-config.json').read_text(encoding='utf-8-sig'))
 W, H = 1024, 1536
 gold = (194, 163, 104, 255)

@@ -1,5 +1,4 @@
 """Normalize v3 layers: true-alpha subject, lineart masked to new silhouette, uniform-darkened background."""
-import shutil
 import sys
 from pathlib import Path
 
@@ -14,16 +13,17 @@ from align_lineart import (
     register as align_register,
     residual as align_residual,
 )
+from common import card_root, config, darken, delivery
 
-ROOT = Path(__file__).resolve().parent.parent
+ROOT = card_root()
+CFG = config(ROOT)
 SRC = ROOT / 'assets'
 DELIVERY = ROOT / 'source'
 W, H = 1024, 1536
-DARKEN = 0.99  # 交付背景实测 L 均值 30.3，已经很暗，只作轻微压暗
+DARKEN = darken(CFG)
 
-# The delivery is already a true-alpha 1024x1536 full-bleed subject: no crop,
-# no vertical shift, just the usual saturation/contrast lift.
-subject = Image.open(DELIVERY / 'subject.png').convert('RGBA').resize((W, H), Image.LANCZOS)
+# 交付即 1024x1536 真透明满幅主体时，这里只是直通：不裁切、不位移，只做惯常的饱和/对比提升。
+subject = Image.open(DELIVERY / delivery(CFG, 'subject')).convert('RGBA').resize((W, H), Image.LANCZOS)
 rgb = ImageEnhance.Contrast(ImageEnhance.Color(Image.merge('RGB', subject.split()[:3])).enhance(1.10)).enhance(1.08)
 subject = Image.merge('RGBA', (*rgb.split(), subject.split()[3]))
 subject.save(SRC / 'subject.png')
@@ -31,7 +31,7 @@ sa = np.asarray(subject)[..., 3] / 255.0
 
 
 def load_line_source():
-    for name in ('lineart_src.png', 'lineart.jpeg'):
+    for name in (delivery(CFG, 'lineart'), 'lineart.jpeg'):
         p = DELIVERY / name
         if p.exists():
             im = Image.open(p)
@@ -65,11 +65,7 @@ la = np.where(la < 150, la, 255.0)
 la[sa < 0.5] = 255
 Image.fromarray(la.round().astype(np.uint8), 'RGB').save(SRC / 'lineart.png')
 
-orig = DELIVERY / 'background_orig.png'
-if not orig.exists():
-    # The first run snapshots the untouched delivery; later runs reuse it so
-    # the darkening never compounds.
-    shutil.copy(DELIVERY / 'background_orig.png', orig)
+orig = DELIVERY / delivery(CFG, 'background')
 bg = Image.open(orig).convert('RGB').resize((W, H), Image.LANCZOS)
 bg = ImageEnhance.Contrast(bg).enhance(1.10)
 bga = np.asarray(bg, dtype=np.float64) * DARKEN

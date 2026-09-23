@@ -4,6 +4,10 @@ site/dist/
 __pycache__/
 *.pyc
 
+# 每张卡的壳页由 gen-card-pages.mjs 从 card.template.html 扇出，是产物不是源
+# （pnpm dev / pnpm build 会先生成）。唯一源：card.template.html + cards.manifest.js。
+site/*/index.html
+
 # ---- Blender 工程与参考图（均可由管线重建）----
 # card.blend 由 build_card.py 生成；改了 assets/ 的 png 必须重跑它才生效，
 # 所以它是产物而非源。renders/ 与 preview-*.png 是目检参考图，站点不引用。

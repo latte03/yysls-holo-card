@@ -15,14 +15,17 @@ holo-card/
 │   ├─ fonts/              仓库内字体（SIL OFL）：卡背编号用 NotoSerif-SemiBold.ttf
 │   └─ 浅色-logo.png        深底用版本（当前未使用）
 │
+├─ tools/card_pipeline/    建卡管线脚本只此一份，靠 --card 定位卡目录
+│                             prep_layers / make_text / make_back / align_lineart / tune_glow
+│                             卡级参数（darken、delivery）读该卡 card-config.json
+│
 ├─ cards/                  每张卡一套：源 → 构建 → 渲染
-│   ├─ 001-buran/          脚本在卡根目录
-│   ├─ 002-yaoyaoxin/      脚本在卡根目录
-│   ├─ 003-tingyunyu/      脚本在 scripts/ 子目录（新卡推荐这种）
-│   │   ├─ card-config.json   卡的元数据与合成参数（Blender 管线读这份）
+│   ├─ 001-buran/          例外：prep 有专属裁切/位移逻辑，脚本留在卡根原地
+│   ├─ 002-yaoyaoxin/
+│   ├─ 003-tingyunyu/
+│   │   ├─ card-config.json   卡级数据：文案 + 合成参数 + darken + delivery 交付名
 │   │   ├─ source/            用户交付的原始素材，只读，不要改动
 │   │   ├─ assets/            构建产物（subject/text/lineart/background/back）
-│   │   ├─ scripts             prep_layers / make_text / make_back / align_lineart / tune_glow
 │   │   ├─ card.blend          Blender 工程（贴图是 packed 的）
 │   │   ├─ renders/            hero 定稿、preview-register 等目检图
 │   │   ├─ tools/              Blender 用户偏好
@@ -34,10 +37,13 @@ holo-card/
 └─ site/                   网站本体（Vite 多页应用）
     ├─ index.html          入口：卡序选择（由清单渲染）
     ├─ cards.manifest.js   卡注册表——唯一声明一张卡的地方
+    ├─ card.template.html  卡壳模板（唯一源）
+    ├─ gen-card-pages.mjs  按清单把模板扇成 site/<id>/index.html（产物，不入库）
     ├─ viewer/             共享查看器 app.js / style.css / icons.data.js
     │                       └─ landing.js + landing.css（首页）
-    ├─ 001/ 002/ 003/      每张卡：index.html 壳 + card.config.js（查看器读这份）
-    ├─ public/assets/      原样拷贝的素材：001/ 002/ 003/ 图层与 glb、logo-ink、favicon
+    ├─ 001/ 002/ ...       每张卡：card.config.js（查看器读这份，入库）
+    │                       └─ index.html 由 gen-card-pages.mjs 生成，已 gitignore
+    ├─ public/assets/      原样拷贝的素材：各卡图层与 glb、logo-ink、favicon
     ├─ dist/               vite build 产物，自包含，即发布物
     └─ make_brand.py       从 brand/ 生成站点品牌资源
 ```
@@ -47,9 +53,10 @@ holo-card/
 ```bash
 cd site
 pnpm install       # 依赖（锁文件 site/pnpm-lock.yaml）
-pnpm dev           # 开发服务器（默认 5173，--port 可指定）
+pnpm gen:pages     # 由 card.template.html 生成各卡壳页（dev/build 已自动前置，一般不用手动跑）
+pnpm dev           # 开发服务器（vite.config.js 里配的是 127.0.0.1:4173）
 pnpm build         # 产出 dist/
-pnpm preview       # 本地预览构建产物
+pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在模板）
 ```
 
 `dist/` 就是发布物：three 已捆绑、没有 importmap、没有运行时 fetch，扔到任何静态托管即可。
@@ -70,14 +77,16 @@ pnpm preview       # 本地预览构建产物
 完整命令与验证点在技能文档里，这里是骨架：
 
 ```bash
-# 1. 归位素材 + 写 card-config.json + 按背景亮度定 DARKEN
-# 2. 备层
-python3 scripts/prep_layers.py && python3 scripts/make_text.py && python3 scripts/make_back.py
-# 3. 卡壳：三张卡的 card.glb 逐字节相同，直接复用（本机无 Blender，也不需要）
+# 1. 归位素材到 cards/00X-<name>/source/ + 写 card-config.json（含 darken、必要时 delivery 改名）
+# 2. 备层（脚本只有一份，--card 指卡目录）
+python3 tools/card_pipeline/prep_layers.py --card cards/00X-<name>
+python3 tools/card_pipeline/make_text.py   --card cards/00X-<name>
+python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>
+# 3. 卡壳：各卡 card.glb 逐字节相同，直接复用（本机无 Blender，也不需要）
 cp site/public/assets/003/card.glb site/public/assets/00X/
 # 4. 图层转 WebP 进 site/public/assets/<卡号>/，写 site/<卡号>/card.config.js
-# 5. cards.manifest.js 加一条
-# 6. pnpm build
+# 5. cards.manifest.js 加一条（壳页由它扇出，不用手写也不用拷）
+# 6. cd site && pnpm build
 ```
 
 **为什么不用跑 Blender**：`card.glb` 只是共享的卡壳几何（无内嵌贴图），

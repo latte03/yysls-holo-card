@@ -46,21 +46,19 @@ metadata:
 ## 1. 建卡目录
 
 ```bash
-CARD=cards/004-<name>
-mkdir -p $CARD/{source,assets,scripts,renders,archive}
+CARD=cards/00X-<name>
+mkdir -p $CARD/{source,assets,renders,archive}
 mv <交付目录>/{subject,text,lineart,background}.png $CARD/source/
-mv $CARD/source/lineart.png $CARD/source/lineart_src.png      # 线稿改名，prep 认这个名
+mv $CARD/source/lineart.png $CARD/source/lineart_src.png      # 线稿改名，与默认交付名一致
 mv $CARD/source/background.png $CARD/source/background_orig.png  # 背景原件快照名
-cp cards/003-tingyunyu/scripts/*.py $CARD/scripts/
 ```
 
-脚本在 `scripts/` 子目录，所以 `ROOT = Path(__file__).resolve().parent.parent`
-（001/002 把脚本放根目录，是 `parent`——以文件里实际写的为准）。
+**不拷脚本。** 管线脚本只有一份，在 `tools/card_pipeline/`，靠 `--card` 定位卡目录；
+卡级参数全进 `card-config.json`。交付文件用了非默认名（如 002 的
+`Qwen_image_2.1_00020.png`）就在 config 的 `delivery` 里覆盖，不要去改脚本。
+默认名：`subject.png` / `text.png` / `lineart_src.png` / `background_orig.png`。
 
-改 `scripts/prep_layers.py` 与 `scripts/make_text.py` 里的交付文件名：
-`DELIVERY / 'subject.png'`、`DELIVERY / 'text.png'`。
-
-写 `card-config.json`（Blender 管线读这份）：
+写 `card-config.json`（建卡管线与 Blender 管线共读这份）：
 
 ```json
 {
@@ -68,25 +66,28 @@ cp cards/003-tingyunyu/scripts/*.py $CARD/scripts/
   "title": "<卡名>",
   "subtitle": "传说 · SSR",
   "technique": "<流派文案>",
-  "edition": "No.004",
+  "edition": "No.00X",
   "collection": "燕云十六声 · 典藏闪卡 <第几弹>",
   "description": "<介绍一句>",
   "font": "brand/fonts/NotoSerif-SemiBold.ttf",
+  "darken": 0.98,
+  "delivery": {"subject": "subject.png", "text": "text.png"},
   "parameters": {"subjectScale": 1.0, "subjectDepth": 0.55, "backgroundDepth": -0.45,
                  "foil": 1.0, "particles": 1.0, "glow": 0.85},
   "safeArea": {"scale": 1.0, "offset": [0, 0]}
 }
 ```
 
-`font` 字段只是记录，真正渲染卡背编号的是 `scripts/make_back.py`，它按
-`ROOT / '..' / '..' / 'brand' / 'fonts' / 'NotoSerif-SemiBold.ttf'` 相对定位仓库内字体
-（SIL OFL，许可证在 `brand/fonts/OFL.txt`）。**新卡不要改成系统字体路径**：mac 的 `Songti.ttc`
-和 Windows 的 `simsun.ttc` 都是操作系统授权的字体，不能提交进公开仓库，换机也会渲染失败。
-建卡时把 003 的 `scripts/` 整目录拷过去即可，字体那行无需改动。
+`delivery` 只在交付名不是默认值时才写；`darken` 见第 2 节。
+`font` 字段只是记录，真正渲染卡背编号的是 `tools/card_pipeline/make_back.py`，它按
+`ROOT / '..' / '..' / 'brand' / 'fonts' / 'NotoSerif-SemiBold.ttf'`（ROOT 即 `--card` 给的卡目录）
+相对定位仓库内字体，SIL OFL，许可证在 `brand/fonts/OFL.txt`。**不要改成系统字体路径**：
+mac 的 `Songti.ttc` 和 Windows 的 `simsun.ttc` 都是操作系统授权的字体，不能提交进公开仓库，
+换机也会渲染失败。
 
 ## 2. 背景压暗量（必看）
 
-`scripts/prep_layers.py` 的 `DARKEN` 按交付背景的亮度定。先量再写：
+`darken` 按交付背景的亮度定，写进 `card-config.json`。先量再写：
 
 ```bash
 python3 -c "
@@ -95,19 +96,21 @@ a=np.asarray(Image.open('cards/00X-*/source/background_orig.png').convert('L'))
 print('mean', round(a.mean(),1))"
 ```
 
-| 交付背景均值 | DARKEN |
+| 交付背景均值 | darken |
 |---|---|
 | ~190（白天/亮） | 0.74 |
 | ~130（夜景） | 0.92 |
 | ~20（深夜空） | 1.0（不再压暗，否则纯黑） |
 
+缺 `darken` 字段按 1.0 处理——压暗是审美决定，脚本不替你做默认。
+
 ## 3. 跑管线
 
 ```bash
-cd cards/00X-<name>
-python3 scripts/prep_layers.py      # 主体提饱和/线稿配准/背景压暗 → assets/
-python3 scripts/make_text.py        # 边框书法层 → assets/text.png
-python3 scripts/make_back.py        # 卡背（共享燕云 logo + 编号）→ assets/back.png
+# 仓库根目录执行，--card 指到卡目录
+python3 tools/card_pipeline/prep_layers.py --card cards/00X-<name>   # 主体提饱和/线稿配准/背景压暗 → assets/
+python3 tools/card_pipeline/make_text.py   --card cards/00X-<name>   # 边框书法层 → assets/text.png
+python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>   # 卡背（共享燕云 logo + 编号）→ assets/back.png
 ```
 
 **验证点**：prep 会打印 `lineart align <scale> / <dx> / <dy> ncc <x> residual <y>px`。
@@ -148,7 +151,8 @@ cp site/public/assets/003/card.glb site/public/assets/00X/
 ```bash
 S=site
 mkdir -p $S/00X $S/public/assets/00X
-cp $S/003/index.html $S/00X/index.html          # 壳，逐字节相同
+# 壳页不用手写也不用拷：manifest 加过条目后 pnpm gen:pages 会按模板扇出 site/00X/index.html
+#   （pnpm dev / pnpm build 已前置这一步，单独跑一次也行）
 # card.glb 已在第 4 节拷好（复用共享卡壳）；若走的是 Blender 路线则：
 #   cp cards/00X-*/web/assets/card.glb $S/public/assets/00X/
 ```

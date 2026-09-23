@@ -4,8 +4,9 @@
   "version": "1.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
+    "gen:pages": "node gen-card-pages.mjs",
+    "dev": "node gen-card-pages.mjs && vite",
+    "build": "node gen-card-pages.mjs && vite build",
     "preview": "vite preview"
   },
   "dependencies": {

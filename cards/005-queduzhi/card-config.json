@@ -7,6 +7,7 @@
   "collection": "燕云十六声 · 典藏闪卡 第五弹",
   "description": "燕云十六声典藏系列第五弹 · 传说 SSR No.005。",
   "font": "brand/fonts/NotoSerif-SemiBold.ttf",
+  "darken": 0.98,
   "parameters": {
      "subjectScale": 1.0,
     "subjectDepth": 0.55,

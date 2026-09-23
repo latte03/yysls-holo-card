@@ -7,6 +7,7 @@
   "collection": "燕云十六声 · 典藏闪卡 第三弹",
   "description": "春不渡客便剑指南春",
   "font": "brand/fonts/NotoSerif-SemiBold.ttf",
+  "darken": 1.0,
   "parameters": {
     "subjectScale": 1.0,
     "subjectDepth": 0.55,
