@@ -1,0 +1,19 @@
+{
+  "mode": "holographic",
+  "title": "听云屿",
+  "subtitle": "传说 · SSR",
+  "technique": "百业 · 初觉 · 流派 · 钧钧",
+  "edition": "No.003",
+  "collection": "燕云十六声 · 典藏闪卡 第三弹",
+  "description": "春不渡客便剑指南春",
+  "font": "/System/Library/Fonts/Supplemental/Songti.ttc",
+  "parameters": {
+    "subjectScale": 1.0,
+    "subjectDepth": 0.55,
+    "backgroundDepth": -0.45,
+    "foil": 1.0,
+    "particles": 1.0,
+    "glow": 0.85
+  },
+  "safeArea": {"scale": 1.0, "offset": [0, 0]}
+}

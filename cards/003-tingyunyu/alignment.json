@@ -1,0 +1,14 @@
+{
+  "source": "source/lineart_src.png",
+  "transform": {
+    "scale": 1.0,
+    "dx": 0,
+    "dy": 0
+  },
+  "ncc": 0.15304,
+  "residual_px": {
+    "chosen": 2.0,
+    "identity": 2.0
+  },
+  "note": "residual is the median local displacement between the trace and the subject edges"
+}

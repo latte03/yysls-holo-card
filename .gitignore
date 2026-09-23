@@ -1,0 +1,30 @@
+# ---- 依赖与构建产物 ----
+site/node_modules/
+site/dist/
+__pycache__/
+*.pyc
+
+# ---- Blender 工程与参考图（均可由管线重建）----
+# card.blend 由 build_card.py 生成；改了 assets/ 的 png 必须重跑它才生效，
+# 所以它是产物而非源。renders/ 与 preview-*.png 是目检参考图，站点不引用。
+cards/*/card.blend
+cards/*/card.blend1
+cards/*/renders/
+cards/*/preview-*.png
+cards/*/assets/
+cards/*/tools/
+
+# ---- 归档（旧 blend 备份、废弃素材、zip）----
+# 只忽略每张卡自己的 archive/；仓库根的 archive/legacy-v1/ 是 v1 弃稿代码，要留档。
+cards/*/archive/
+
+# ---- 系统垃圾 ----
+.DS_Store
+*.log
+
+# ---- 本地发布绑定（含项目/站点 ID，按需决定是否入库）----
+# .燕云十六声 · 典藏闪卡.qoder.site
+
+# 说明：cards/*/source/ 是用户交付的原始素材，**唯一副本，删了无法重建**，务必入库。
+#       site/public/assets/ 是站点运行所需（WebP + glb），同样要入库——
+#       它让 `npm install && npm run dev` 在干净克隆上直接跑起来。
