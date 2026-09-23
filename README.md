@@ -12,6 +12,7 @@
 holo-card/
 ├─ brand/                  共享品牌源（唯一 logo 出处）
 │   ├─ logo+文字.webp       燕云十六声 lockup，页头/卡背/favicon 都从它派生
+│   ├─ fonts/              仓库内字体（SIL OFL）：卡背编号用 NotoSerif-SemiBold.ttf
 │   ├─ 浅色-logo.png        深底用版本（当前未使用）
 │   └─ 人物截图/            角色参考图
 │

@@ -6,7 +6,7 @@
   "edition": "No.002",
   "collection": "燕云十六声 · 典藏闪卡 第二弹",
   "description": "燕云十六声典藏系列第二弹 · 传说 SSR No.002。紫金月夜下的多层镭射收藏卡。",
-  "font": "/System/Library/Fonts/Supplemental/Songti.ttc",
+  "font": "brand/fonts/NotoSerif-SemiBold.ttf",
   "parameters": {
     "subjectScale": 1.0,
     "subjectDepth": 0.55,

@@ -6,7 +6,7 @@
   "edition": "No.005",
   "collection": "燕云十六声 · 典藏闪卡 第五弹",
   "description": "燕云十六声典藏系列第五弹 · 传说 SSR No.005。",
-  "font": "C:/Windows/Fonts/simsun.ttc",
+  "font": "brand/fonts/NotoSerif-SemiBold.ttf",
   "parameters": {
      "subjectScale": 1.0,
     "subjectDepth": 0.55,

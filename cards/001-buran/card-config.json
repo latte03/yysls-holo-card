@@ -6,7 +6,7 @@
   "edition": "No.001",
   "collection": "燕云十六声 · 典藏闪卡 第一弹",
   "description": "燕云十六声典藏系列第一弹 · 传说 SSR No.001。国风厚涂游戏原画感的多层镭射收藏卡。",
-  "font": "/System/Library/Fonts/Supplemental/Songti.ttc",
+  "font": "brand/fonts/NotoSerif-SemiBold.ttf",
   "parameters": {
     "subjectScale": 1.0,
     "subjectDepth": 0.55,

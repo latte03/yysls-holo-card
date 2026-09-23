@@ -18,8 +18,8 @@ lw = 600
 logo = logo.resize((lw, round(logo.height * lw / logo.width)), Image.LANCZOS)
 im.alpha_composite(logo, ((W - lw) // 2, 544))
 
-font = '/System/Library/Fonts/Supplemental/Songti.ttc'
-d.text((512, 1310), cfg.get('edition', 'No.00'), font=ImageFont.truetype(font, 30, index=3),
+font = ROOT / '..' / '..' / 'brand' / 'fonts' / 'NotoSerif-SemiBold.ttf'
+d.text((512, 1310), cfg.get('edition', 'No.00'), font=ImageFont.truetype(str(font), 30),
        fill=gold, anchor='ma')
 im.save(ROOT / 'assets' / 'back.png')
 print('back.png', im.size)

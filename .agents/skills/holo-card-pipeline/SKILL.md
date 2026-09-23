@@ -22,7 +22,7 @@ metadata:
 | 装 python 包 | pip 直连 pypi.org 会超时，必须加 `-i https://<pypi-mirror>/pypi/simple/` |
 | Node / pnpm | node 26.5.0、pnpm 12.6.0（<toolchain-mgr> pin）；npm registry 走 `~/.npmrc` 的 <npm-mirror> |
 | pnpm 命令 | agent 的 Bash 里先 `export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"`，否则拿到 `AppData\Local\pnpm` 的独立版 11.21.0 |
-| 字体 | `C:\Windows\Fonts\`，如 `simsun.ttc` / `STKAITI.TTF`（替代 mac 的 `Songti.ttc`） |
+| 字体 | 用仓库内 `brand/fonts/NotoSerif-SemiBold.ttf`（SIL OFL），**不要**引用系统字体目录 |
 | GitHub | 直连 release 下载超时，`<toolchain-mgr> install` 需要活的代理（<proxy-client> 端口不固定） |
 
 **缺素材就先问，不要猜。**
@@ -71,16 +71,18 @@ cp cards/003-tingyunyu/scripts/*.py $CARD/scripts/
   "edition": "No.004",
   "collection": "燕云十六声 · 典藏闪卡 <第几弹>",
   "description": "<介绍一句>",
-  "font": "C:/Windows/Fonts/simsun.ttc",
+  "font": "brand/fonts/NotoSerif-SemiBold.ttf",
   "parameters": {"subjectScale": 1.0, "subjectDepth": 0.55, "backgroundDepth": -0.45,
                  "foil": 1.0, "particles": 1.0, "glow": 0.85},
   "safeArea": {"scale": 1.0, "offset": [0, 0]}
 }
 ```
 
-`font` 字段只是记录，真正渲染卡背编号的是 `scripts/make_back.py` 里硬编码的
-`font = '/System/Library/Fonts/Supplemental/Songti.ttc'` —— 本机要一并改成 `C:\Windows\Fonts\` 下的字体。
-它同时传了 `index=3`（ttc 子字体索引），换字体后索引要重测，否则编号会渲染成另一种字形或失败。
+`font` 字段只是记录，真正渲染卡背编号的是 `scripts/make_back.py`，它按
+`ROOT / '..' / '..' / 'brand' / 'fonts' / 'NotoSerif-SemiBold.ttf'` 相对定位仓库内字体
+（SIL OFL，许可证在 `brand/fonts/OFL.txt`）。**新卡不要改成系统字体路径**：mac 的 `Songti.ttc`
+和 Windows 的 `simsun.ttc` 都是操作系统授权的字体，不能提交进公开仓库，换机也会渲染失败。
+建卡时把 003 的 `scripts/` 整目录拷过去即可，字体那行无需改动。
 
 ## 2. 背景压暗量（必看）
 

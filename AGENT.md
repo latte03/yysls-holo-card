@@ -136,9 +136,13 @@ w.__holo.error               // 有值就是真失败
   `$("edition").textContent` 抛 null、整卡加载失败。页头标签现由 `renderCardNav()` 从清单渲染。
 - **站点素材只放 WebP**（省约 75%，alpha 与 PNG 一致，差异只在 alpha<128 的不可见区域）；
   PNG 原件留在 `cards/*/assets/`。
-- **`make_back.py` 写死了 mac 字体路径** `/System/Library/Fonts/Supplemental/Songti.ttc`（`card-config.json`
-  的 `font` 字段同值）。Windows 上换 `C:\Windows\Fonts\simsun.ttc` 或 `STKAITI.TTF`；注意
-  `ImageFont.truetype(..., index=3)` 的 ttc 子字体索引随字体而变，换字体后要重看卡背编号排版。
+- **卡背编号只用仓库内字体**：`brand/fonts/NotoSerif-SemiBold.ttf`（SIL OFL 1.1，许可证同目录
+  `OFL.txt`）。`make_back.py` 用 `ROOT / '..' / '..' / 'brand' / 'fonts' / ...` 相对定位，
+  五张卡（含已定稿的 001-003）都靠它，换机不漂。**不要**改回系统字体路径——
+  mac 的 `Songti.ttc` 与 Windows 的 `simsun.ttc` 都是随操作系统的授权字体，
+  不能提交进公开仓库，而且换机就渲染不出来。权重用 SemiBold（用户偏好更粗的编号，
+  Regular 与原 Songti 更接近但偏细），墨迹 y 区间 1321-1342，与 Regular 只差 1px，无需调坐标。
+  同目录还留着 `NotoSerif-Regular.ttf` 作为该家族的另一个权重。
 
 ## 提交 GitHub 前的自查
 
