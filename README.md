@@ -46,9 +46,10 @@ holo-card/
 
 ```bash
 cd site
-npm run dev        # 开发服务器（默认 5173，--port 可指定）
-npm run build      # 产出 dist/
-npm run preview    # 本地预览构建产物
+pnpm install       # 依赖（锁文件 site/pnpm-lock.yaml）
+pnpm dev           # 开发服务器（默认 5173，--port 可指定）
+pnpm build         # 产出 dist/
+pnpm preview       # 本地预览构建产物
 ```
 
 `dist/` 就是发布物：three 已捆绑、没有 importmap、没有运行时 fetch，扔到任何静态托管即可。
@@ -72,19 +73,19 @@ npm run preview    # 本地预览构建产物
 # 1. 归位素材 + 写 card-config.json + 按背景亮度定 DARKEN
 # 2. 备层
 python3 scripts/prep_layers.py && python3 scripts/make_text.py && python3 scripts/make_back.py
-# 3. Blender：跳过 Cycles 渲染（实测与完整管线产出的 GLB 逐字节一致）
-/Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python ~/.agents/skills/holo-card-studio/scripts/holographic/build_card.py -- "$(pwd)" --skip-render
-/Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python ~/.agents/skills/holo-card-studio/scripts/holographic/export_web.py -- "$(pwd)"
+# 3. 卡壳：三张卡的 card.glb 逐字节相同，直接复用（本机无 Blender，也不需要）
+cp site/public/assets/003/card.glb site/public/assets/00X/
 # 4. 图层转 WebP 进 site/public/assets/<卡号>/，写 site/<卡号>/card.config.js
 # 5. cards.manifest.js 加一条
-# 6. npm run build
+# 6. pnpm build
 ```
 
-**为什么能跳过渲染**：`tune_glow.py` 只改 Blender 侧材质并重渲 hero.png，而 `export_web.py`
-另建 `web_front/web_edge/web_back/web_gold` 四个材质，那些改动到不了 GLB——实测跳过后
-导出的 GLB 与完整管线 md5 相同。要 hero 参考图时再单独跑 `tune_glow.py`。
+**为什么不用跑 Blender**：`card.glb` 只是共享的卡壳几何（无内嵌贴图），
+subject/background/text/lineart/back 五层由 `viewer/app.js` 从站点侧 WebP 加载后在着色器里合成，
+所以每张卡的 GLB md5 完全一致。旧 mac 机器上走 `build_card.py --skip-render` + `export_web.py`
+也能拿到同样的 GLB（实测与完整管线逐字节一致，md5 相同），两条路等价；
+只有要 `renders/hero.png` 参考图或改卡壳几何本身时才真需要 Blender。
+需要 hero 图时单独跑 `tune_glow.py`（它只改 Blender 侧材质，改动到不了 GLB）。
 
 ## 线稿配准
 

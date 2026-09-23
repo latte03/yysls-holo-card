@@ -46,17 +46,40 @@
 
 ## 环境
 
-| 依赖 | 位置 / 版本 |
-|---|---|
-| Blender | `/Applications/Blender.app/Contents/MacOS/Blender`，5.1.2，Cycles GPU |
-| Python | `python3`，PIL 12.2 + numpy（**没有** scipy/skimage/cv2，别 import） |
-| Node | `~/.local/share/<toolchain-mgr>/shims/node`（Bash 工具的 PATH 里没有 node） |
-| three | site 内 `node_modules`，0.180；Vite 裸导入 `three` / `three/addons/...` |
-| 技能脚本 | `~/.agents/skills/holo-card-studio/scripts/holographic/`（build_card / export_web） |
+仓库现在在 **Windows**：`<repo-root>`。下面左列是本机事实，右列是旧 mac
+（`/Users/<user>/Documents/code-dev/holo-card`）的写法——文档里出现 mac 路径时按这张表换算。
+
+| 依赖 | 本机（Windows） | 旧 mac（历史文档里的写法） |
+|---|---|---|
+| Blender | **未安装，建卡不需要**（见下节） | `/Applications/Blender.app/Contents/MacOS/Blender`，5.1.2，Cycles GPU |
+| 技能脚本 | 本机没有（只在旧 mac 上） | `~/.agents/skills/holo-card-studio/scripts/holographic/` |
+| Python | `python3`（<toolchain-mgr> shim，3.14.4）+ PIL 12.3.0 + numpy 2.5.1 | `python3`，PIL 12.2 + numpy |
+| Node / 包管理 | `node` 26.5.0 + `pnpm` 12.6.0（<toolchain-mgr> pin），依赖在 `site/pnpm-lock.yaml` | `~/.local/share/<toolchain-mgr>/shims/node` + npm |
+| three | `site/node_modules`，0.180；Vite 裸导入 `three` / `three/addons/...` | 同 |
+
+（**没有** scipy/skimage/cv2，别 import。）
+
+两个本机网络/PATH 的硬事实：
+
+- `pip` 直连 pypi.org 会超时中断，装包加 `-i https://<pypi-mirror>/pypi/simple/`；
+  npm 走 `~/.npmrc` 里的 <npm-mirror>。GitHub release 直连不通，`<toolchain-mgr> install` 需要活的代理
+  （<proxy-client> 端口不固定，<proxy-port> 时断）。
+- **agent 的 Bash 会话里 `pnpm` 会被独立版抢走**：`C:\Users\<user>\AppData\Local\pnpm`（11.21.0）
+  排在 <toolchain-mgr> shims 之前，`pnpm -v` 拿到 11.21.0。跑命令前先
+  `export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"`。用户自己的终端里 <toolchain-mgr> 在前，
+  不受影响。注册表 PATH 与 agent 会话 PATH 顺序不同，别拿 `which -a` 的结论推断终端行为。
 
 ## 加速建卡的关键认知
 
-一条卡的耗时约 3 分钟，几乎全在 Blender。两个可跳过的渲染：
+**`card.glb` 是共享卡壳，新卡可以完全不碰 Blender。** 001/002/003 的
+`site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，23668 字节，
+glTF 里没有 image chunk）：它只有 3 个 mesh 和 `web_front/web_edge/web_back/web_gold` 四个材质名，
+subject/background/text/lineart/back 五层贴图全部由 `site/viewer/app.js` 从 `/assets/<id>/*.webp`
+加载后在着色器里合成。所以新卡 `cp site/public/assets/003/card.glb site/public/assets/004/` 就够了。
+只有两种情况真需要 Blender + `holo-card-studio` 脚本：要 `renders/hero.png` 参考图，
+或要改卡壳几何本身（比例、厚度、边框造型）。
+
+一条卡若走 Blender 管线，耗时约 3 分钟，几乎全在渲染。两个可跳过的渲染：
 
 - **`build_card.py --skip-render`**：跳过帧 25 的 Cycles 静帧。实测导出的 GLB 与完整管线
   **逐字节一致**（md5 相同）——GLB 来自 `export_web.py`，与渲染无关。
@@ -70,7 +93,7 @@ prep 基本是直通（002/003 都是恒等对齐、残差 ≤2px）。
 
 ## 验证怎么做（以及什么不算缺陷）
 
-发布前本地验证：`npm run build` → `cd dist && python3 -m http.server 4180` →
+发布前本地验证：`pnpm build` → `cd dist && python3 -m http.server 4180` →
 同源 iframe 探针读 `window.__holo.ready`。
 
 ```js
@@ -113,6 +136,9 @@ w.__holo.error               // 有值就是真失败
   `$("edition").textContent` 抛 null、整卡加载失败。页头标签现由 `renderCardNav()` 从清单渲染。
 - **站点素材只放 WebP**（省约 75%，alpha 与 PNG 一致，差异只在 alpha<128 的不可见区域）；
   PNG 原件留在 `cards/*/assets/`。
+- **`make_back.py` 写死了 mac 字体路径** `/System/Library/Fonts/Supplemental/Songti.ttc`（`card-config.json`
+  的 `font` 字段同值）。Windows 上换 `C:\Windows\Fonts\simsun.ttc` 或 `STKAITI.TTF`；注意
+  `ImageFont.truetype(..., index=3)` 的 ttc 子字体索引随字体而变，换字体后要重看卡背编号排版。
 
 ## 提交 GitHub 前的自查
 

@@ -27,4 +27,4 @@ cards/*/archive/
 
 # 说明：cards/*/source/ 是用户交付的原始素材，**唯一副本，删了无法重建**，务必入库。
 #       site/public/assets/ 是站点运行所需（WebP + glb），同样要入库——
-#       它让 `npm install && npm run dev` 在干净克隆上直接跑起来。
+#       它让 `pnpm install && pnpm dev` 在干净克隆上直接跑起来。
