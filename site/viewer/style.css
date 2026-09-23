@@ -19,6 +19,12 @@
   --danger: #a34829;
   --focus: #8a6a2f;
   --control: #f0f1ee;
+  /* Layout frame. The two-column / stacked switch lives at 1024px in the one
+     media query below — keep app.js's `stacked` matchMedia in step with it. */
+  --pad: 54px;
+  --masthead-h: 96px;
+  --footer-h: 66px;
+  --col-gap: 40px;
   font-family: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -89,11 +95,11 @@ button svg {
   display: none !important;
 }
 .masthead {
-  height: 96px;
+  height: var(--masthead-h);
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  padding: 0 54px;
+  padding: 0 var(--pad);
   position: relative;
   z-index: 2;
 }
@@ -163,10 +169,11 @@ button svg {
   background: #474a44;
   color: white;
 }
+/* Stacked (narrow) default: the card owns the whole first screen and the info
+   section starts below the fold. The two-column query overrides the height. */
 .gallery {
-  height: calc(100svh - 278px);
-  min-height: 440px;
-  max-height: 850px;
+  height: calc(100svh - var(--masthead-h));
+  min-height: 375px;
   position: relative;
 }
 .stage {
@@ -309,7 +316,7 @@ button svg {
 }
 .stage-note {
   position: absolute;
-  inset: auto 54px 18px;
+  inset: auto var(--pad) 18px;
   pointer-events: none;
   display: flex;
   justify-content: space-between;
@@ -369,31 +376,16 @@ button svg {
   padding: 6px;
 }
 .parameter-panel {
-  /* Anchored to the viewport so the depth controls sit in the free space at the far
-     right, clear of the card. (Inside .tools an absolute box can only be placed
-     relative to the centred toolbar, which put it on top of the artwork.) The bottom
-     offset keeps it clear of the artwork bar's finish swatches and foil slider. */
-  position: fixed;
-  z-index: 5;
-  right: 28px;
-  bottom: 176px;
-  width: 266px;
+  /* The depth panel flows inside the info section (.artwork-bar, which app.js moves it
+     into once at startup) instead of being pinned to a viewport corner: anchored to the
+     right it sat on top of the card column, and a per-breakpoint re-parenting fight between
+     CSS and JS is exactly how it ended up in the wrong grid cell before. In-flow it reads
+     as the last block of the info column on both layouts, and [hidden] still collapses it. */
+  grid-column: 1 / -1;
+  width: auto;
   padding: 20px 22px 24px;
-  background: #fff;
+  background: #f1f2ee;
   border-radius: 8px;
-  box-shadow: 0 12px 45px #20261b1a;
-}
-/* Beside the card the floating panel needs roughly 300px of clear margin; narrower
-   than that it stacks under the stage instead of covering the artwork. */
-@media (min-width: 761px) and (max-width: 960px) {
-  .parameter-panel {
-    position: static;
-    transform: none;
-    width: calc(100% - 48px);
-    margin: 28px auto 0;
-    box-shadow: none;
-    background: #f1f2ee;
-  }
 }
 .panel-heading {
   display: flex;
@@ -429,7 +421,7 @@ button svg {
   margin: 0;
 }
 .artwork-bar {
-  margin: 34px 54px 0;
+  margin: 34px var(--pad) 0;
   border-top: 1px solid var(--line);
   padding-top: 26px;
   display: grid;
@@ -630,8 +622,8 @@ input[type="range"]::-moz-range-thumb {
   border: 1px solid var(--paper);
 }
 .footer {
-  height: 66px;
-  margin: 0 54px;
+  height: var(--footer-h);
+  margin: 0 var(--pad);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -720,23 +712,85 @@ dialog dd {
   }
 }
 @media (min-width: 1600px) {
-  .masthead {
-    padding: 0 72px;
+  :root {
+    --pad: 72px;
   }
-  .artwork-bar,
+}
+/* ---- PC (>=1024px): two columns, info left / card right ----
+   The page becomes a 100svh flex column so the card column eats exactly the
+   height the masthead and footer leave (no calc() reverse-engineered from the
+   stacked arrangement), and only the info column scrolls when it runs long.
+   1fr:2fr puts the card at 2/3 of the content width. */
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    overflow: hidden;
+  }
+  .masthead,
   .footer {
-    margin-left: 72px;
-    margin-right: 72px;
+    flex: 0 0 auto;
+  }
+  main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(288px, 1fr) minmax(0, 2fr);
+    gap: 0 var(--col-gap);
+    padding: 0 var(--pad);
+  }
+  .gallery {
+    grid-column: 2;
+    grid-row: 1;
+    height: auto;
+    min-height: 0;
   }
   .stage-note {
-    left: 72px;
-    right: 72px;
+    inset: auto 0 18px;
+  }
+  .artwork-bar {
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: start;
+    gap: 24px;
+    margin: 0;
+    padding: 26px 0;
+    border-top: 0;
+    min-height: 0;
+    overflow-y: auto;
+  }
+  /* A ~300px column cannot hold the wide bar's title | flip | finish row, so each
+     group gets its own row and nothing has to wrap one glyph per line. */
+  .face-picker {
+    justify-content: flex-start;
+  }
+  .finish-cluster {
+    display: grid;
+    gap: 18px;
+    justify-items: start;
+    width: 100%;
+  }
+  .finish-control {
+    width: 100%;
+    max-width: 280px;
+    justify-self: start;
+  }
+  .title-line h1 {
+    font-size: 36px;
+  }
+  .parameter-panel {
+    margin-top: 2px;
   }
 }
 @media (max-width: 760px) {
+  :root {
+    --pad: 24px;
+    --masthead-h: 78px;
+    --footer-h: 62px;
+  }
   .masthead {
-    height: 78px;
-    padding: 0 24px;
     grid-template-columns: 1fr auto;
   }
   .wordmark-logo {
@@ -753,19 +807,21 @@ dialog dd {
     display: none;
   }
   .header-actions {
+    /* Without this the label's `grid-column: 1/-1` pushes the actions into a third
+       row, so the two round buttons hung 12px below the 78px masthead and sat on top
+       of the card. The column has to be explicit too: a definite-row item is placed
+       before the auto-placed wordmark, so it would otherwise claim column 1. */
+    grid-area: 1 / 2;
     gap: 5px;
   }
   .header-actions .icon-button {
     width: 38px;
     height: 38px;
   }
-  .gallery {
-    height: calc(100svh - 330px);
-    min-height: 375px;
-    max-height: 680px;
-  }
+  /* The note (and the old toolbar these offsets used to reserve room for) is gone on
+     a phone, so the canvas takes the whole first screen. */
   .stage {
-    bottom: 42px;
+    bottom: 0;
   }
   .stage-note {
     display: none;
@@ -780,7 +836,7 @@ dialog dd {
     bottom: 0;
   }
   .artwork-bar {
-    margin: 20px 24px 0;
+    margin: 20px var(--pad) 0;
     padding-top: 24px;
     grid-template-columns: 1fr auto;
     gap: 25px 14px;
@@ -788,6 +844,10 @@ dialog dd {
   }
   .title-line {
     gap: 13px;
+    /* The flip switch shares this row, so the title column is only ~200px on a phone:
+       four 34px glyphs plus the 传说 · SSR tail do not fit side by side. Letting the row
+       wrap puts the tail under the name instead of breaking the name itself. */
+    flex-wrap: wrap;
   }
   .title-line h1 {
     font-size: 34px;
@@ -813,10 +873,12 @@ dialog dd {
     flex-wrap: wrap;
     justify-content: space-between;
   }
+  /* Stacked instead of the desktop's heading|foil pair: side by side the 4-glyph
+     卡面质感 label wrapped one character per line inside the half-width cell. */
   .finish-control {
     flex: 1 1 100%;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
   }
   .finish-heading {
     gap: 10px;
@@ -838,30 +900,15 @@ dialog dd {
     gap: 11px;
   }
   .footer {
-    height: 62px;
-    margin: 0 24px;
     font-size: 11px;
   }
   .footer span:last-child {
     font-size: 11px;
   }
-  .parameter-panel {
-    position: static;
-    transform: none;
-    width: calc(100% - 48px);
-    margin: 28px auto 0;
-    box-shadow: none;
-    background: #f1f2ee;
-  }
 }
 @media (max-width: 365px) {
-  .masthead {
-    padding: 0 18px;
-  }
-  .artwork-bar,
-  .footer {
-    margin-left: 18px;
-    margin-right: 18px;
+  :root {
+    --pad: 18px;
   }
   .finish-control {
     gap: 20px;

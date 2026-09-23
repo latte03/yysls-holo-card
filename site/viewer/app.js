@@ -9,6 +9,12 @@ const icons = ICON_TREES;
 const $ = (id) => document.getElementById(id);
 const stage = $("stage");
 const media = matchMedia("(prefers-reduced-motion: reduce)");
+// Paired with style.css's two-column breakpoint (>=1024px). Below it the card owns the
+// first screen and the info section sits under the fold, so the page has to scroll.
+const stacked = matchMedia("(max-width: 1023px)");
+// The depth panel is part of the info section on both layouts: re-parent it once here
+// instead of moving it between main and the card column on every resize.
+document.querySelector(".artwork-bar").append($("parameter-panel"));
 const scene = new THREE.Scene();
 const camera = new THREE.OrthographicCamera(-6, 6, 6, -6, 0.1, 100);
 camera.position.set(0, 0, 20);
@@ -434,13 +440,6 @@ async function init() {
   }
   if (config.sourceMode === "relief" && !reliefLayers.subject.length) throw Error("缺少独立人物层，请重新生成模型");
   addShadow();
-  const settingsHome=$('parameter-panel').parentElement;
-  const responsiveSettings=()=>{
-    const panel=$('parameter-panel');
-    if(matchMedia('(max-width:960px)').matches)document.querySelector('main').append(panel);
-    else settingsHome.append(panel);
-  };
-  responsiveSettings();window.addEventListener('resize',responsiveSettings);
   setupControls();
   document
     .querySelectorAll("button[disabled],input[disabled]")
@@ -775,9 +774,15 @@ function setupControls() {
     dragging = true;
     setAuto(false);
     lastPointer = { x: e.clientX, y: e.clientY };
+    stage.focus({ preventScroll: true });
+    // Stacked layout + a finger: the info section is one scroll away, so vertical
+    // gestures must reach the page. Capturing the pointer and adding .dragging
+    // (touch-action: none) swallowed them and turned every swipe into a tilt. Without
+    // capture the browser keeps pan-y, claims a vertical pan and fires pointercancel
+    // (release() stops the rotation), while a horizontal drag still spins the card.
+    if (e.pointerType === "touch" && stacked.matches) return;
     stage.setPointerCapture(e.pointerId);
     stage.classList.add("dragging");
-    stage.focus({ preventScroll: true });
   });
   stage.addEventListener("pointermove", (e) => {
     if (!dragging) return;

@@ -11,20 +11,36 @@
 body {
   margin: 0;
   min-height: 100svh;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* Not place-items:center: as soon as the list grows past one screen that centering
+     overflows the top as well, and the logo ends up unscrollable. Padding + `margin:
+     auto 0` on main centers the block while there is room and lets it grow down
+     (and scroll) when there is not. */
+  padding: clamp(24px, 6svh, 72px) 20px;
   background: var(--paper);
   color: var(--ink);
   font-family: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
+main {
+  margin: auto 0;
+  width: 100%;
+  /* Wider than five rows need (~740px) so the desktop keeps its single centred
+     line, but capped so a future 6th entry wraps instead of overflowing. */
+  max-width: 820px;
+}
 .mark {
   display: block;
-  width: 168px;
+  width: min(168px, 100%);
   height: auto;
   margin: 0 auto 30px;
 }
+/* flex-wrap is not optional: five entries already need ~620px, so an unwrappable row
+   overflowed any phone side to side. */
 .links {
   display: flex;
+  flex-wrap: wrap;
   gap: 10px;
   justify-content: center;
   list-style: none;
@@ -57,4 +73,30 @@ body {
   color: var(--muted);
   font-size: 10px;
   letter-spacing: 0.14em;
+}
+/* Phone state (same 760px line the card page uses): one full-width row per card, in
+   manifest order, name left and edition right. Every row is a single 52px-tall tap
+   target, so there is nothing left to wrap or scroll sideways. */
+@media (max-width: 759px) {
+  .links {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .links li {
+    width: 100%;
+  }
+  .links a {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    padding: 13px 18px;
+    text-align: left;
+  }
+  .links small {
+    margin-top: 0;
+  }
 }
