@@ -12,12 +12,13 @@ metadata:
 
 ## 本机环境（Windows，`<repo-root>`）
 
-本技能里出现的 mac 路径（`/Applications/Blender.app`、`~/.agents/skills/holo-card-studio/`、
-`/System/Library/Fonts/`、`/Users/<user>/...`）都是旧 mac 机器的写法，本机一律不适用。本机事实：
+本技能里出现的 mac 路径（`/Applications/Blender.app`、`/System/Library/Fonts/`、`/Users/<user>/...`）
+都是旧 mac 机器的写法，本机一律不适用。本机事实：
 
 | 项 | 本机 |
 |---|---|
 | Blender | **未安装，且建卡不需要**——见第 4 节 |
+| Blender 脚本 | 仓库内置 `.agents/skills/holo-card-pipeline/scripts/`，**不要**去 `~/.agents/skills/` 找第三方版本 |
 | Python | `python3`（<toolchain-mgr> shim 3.14.4）+ PIL 12.3.0 + numpy 2.5.1；**没有** scipy/skimage/cv2 |
 | 装 python 包 | pip 直连 pypi.org 会超时，必须加 `-i https://<pypi-mirror>/pypi/simple/` |
 | Node / pnpm | node 26.5.0、pnpm 12.6.0（<toolchain-mgr> pin）；npm registry 走 `~/.npmrc` 的 <npm-mirror> |
@@ -129,16 +130,21 @@ cp site/public/assets/003/card.glb site/public/assets/00X/
 ```
 
 只有这两种情况才需要 Blender：要 `renders/hero.png` 目检参考图，或要改卡壳几何本身
-（比例、厚度、边框造型）。届时在装了 Blender 的机器上跑（mac 写法，本机无 Blender）：
+（比例、厚度、边框造型）。脚本是**仓库内置**的，在装了 Blender 的机器上、**卡目录里**执行：
 
 ```bash
-/Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python ~/.agents/skills/holo-card-studio/scripts/holographic/build_card.py \
-  -- "$(pwd)" --skip-render
+B=../../.agents/skills/holo-card-pipeline/scripts/holographic   # 仓库内置，相对卡目录两层
 
 /Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python ~/.agents/skills/holo-card-studio/scripts/holographic/export_web.py -- "$(pwd)"
+  --python $B/build_card.py -- "$(pwd)" --skip-render
+
+/Applications/Blender.app/Contents/MacOS/Blender --background \
+  --python $B/export_web.py -- "$(pwd)"
 ```
+
+**`holographic/` 和 `scripts/blender_compat.py` 必须在一起**：`build_card.py` 靠 `parents[1]`
+导入后者，只拷其中一个必 ImportError。这两个脚本随技能内置在仓库里，
+不要去 `~/.agents/skills/` 找第三方版本。
 
 **不要跑 `tune_glow.py`**：它只改 Blender 侧材质并重渲 hero.png，而 `export_web.py`
 另建 `web_front/web_edge/web_back/web_gold` 四个材质，那些改动到不了 GLB。实测跳过后

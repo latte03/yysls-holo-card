@@ -10,6 +10,8 @@
 
 ```
 holo-card/
+├─ .agents/skills/holo-card-pipeline/  项目技能：SKILL.md 操作手册 + scripts/holographic/ Blender 脚本
+│                                       （自包含，不依赖 ~/.agents/skills/）
 ├─ brand/                  共享品牌源（唯一 logo 出处）
 │   ├─ logo+文字.webp       燕云十六声 lockup，页头/卡背/favicon 都从它派生
 │   ├─ fonts/              仓库内字体（SIL OFL）：卡背编号用 NotoSerif-SemiBold.ttf
@@ -91,7 +93,8 @@ cp site/public/assets/003/card.glb site/public/assets/00X/
 
 **为什么不用跑 Blender**：`card.glb` 只是共享的卡壳几何（无内嵌贴图），
 subject/background/text/lineart/back 五层由 `viewer/app.js` 从站点侧 WebP 加载后在着色器里合成，
-所以每张卡的 GLB md5 完全一致。旧 mac 机器上走 `build_card.py --skip-render` + `export_web.py`
+所以每张卡的 GLB md5 完全一致。真要跑 Blender 时用仓库内置的脚本
+（`.agents/skills/holo-card-pipeline/scripts/holographic/`，`build_card.py --skip-render` + `export_web.py`）
 也能拿到同样的 GLB（实测与完整管线逐字节一致，md5 相同），两条路等价；
 只有要 `renders/hero.png` 参考图或改卡壳几何本身时才真需要 Blender。
 需要 hero 图时单独跑 `tune_glow.py`（它只改 Blender 侧材质，改动到不了 GLB）。

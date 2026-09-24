@@ -50,6 +50,11 @@
   **例外是 001**：它的 `prep_layers.py` 有裁切 6% 边 + 下移 110px 的专属逻辑，
   已定稿且不再重跑，脚本就留在 `cards/001-buran/` 原地，别并入公共包。
   001 的 `darken` 仍写死在它自己脚本里（0.74），config 里那份 `darken` 只是记录，别指望公共脚本改它。
+- Blender 侧脚本也在仓库内：`.agents/skills/holo-card-pipeline/scripts/holographic/`
+  （`build_card.py` / `export_web.py`）+ 同级的 `.agents/skills/holo-card-pipeline/scripts/blender_compat.py`。
+  `build_card.py` 靠 `parents[1]` 导入 `blender_compat`，**两者必须保持这个相对位置**（移动就 ImportError）。
+  Blender 命令一律在**卡目录里**用 `../../.agents/skills/holo-card-pipeline/scripts/holographic/` 相对调用。
+  **不引用** `~/.agents/skills/` 下的第三方技能——项目技能自包含，换机不漂。
 
 ## 环境
 
@@ -59,7 +64,7 @@
 | 依赖 | 本机（Windows） | 旧 mac（历史文档里的写法） |
 |---|---|---|
 | Blender | **未安装，建卡不需要**（见下节） | `/Applications/Blender.app/Contents/MacOS/Blender`，5.1.2，Cycles GPU |
-| 技能脚本 | 本机没有（只在旧 mac 上） | `~/.agents/skills/holo-card-studio/scripts/holographic/` |
+| 技能脚本 | 仓库内置 `.agents/skills/holo-card-pipeline/scripts/`（Blender 用，本机不需要） | 旧 mac 的 `~/.agents/skills/holo-card-studio/scripts/holographic/` |
 | Python | `python3`（<toolchain-mgr> shim，3.14.4）+ PIL 12.3.0 + numpy 2.5.1 | `python3`，PIL 12.2 + numpy |
 | Node / 包管理 | `node` 26.5.0 + `pnpm` 12.6.0（<toolchain-mgr> pin），依赖在 `site/pnpm-lock.yaml` | `~/.local/share/<toolchain-mgr>/shims/node` + npm |
 | three | `site/node_modules`，0.180；Vite 裸导入 `three` / `three/addons/...` | 同 |
@@ -83,8 +88,9 @@
 glTF 里没有 image chunk）：它只有 3 个 mesh 和 `web_front/web_edge/web_back/web_gold` 四个材质名，
 subject/background/text/lineart/back 五层贴图全部由 `site/viewer/app.js` 从 `/assets/<id>/*.webp`
 加载后在着色器里合成。所以新卡 `cp site/public/assets/003/card.glb site/public/assets/004/` 就够了。
-只有两种情况真需要 Blender + `holo-card-studio` 脚本：要 `renders/hero.png` 参考图，
-或要改卡壳几何本身（比例、厚度、边框造型）。
+只有两种情况真需要 Blender：要 `renders/hero.png` 参考图，或要改卡壳几何本身（比例、厚度、
+边框造型）。那时用仓库内置的脚本 `.agents/skills/holo-card-pipeline/scripts/holographic/`
+（`build_card.py` / `export_web.py`，用法见 SKILL.md 第 4 节）。
 
 一条卡若走 Blender 管线，耗时约 3 分钟，几乎全在渲染。两个可跳过的渲染：
 
