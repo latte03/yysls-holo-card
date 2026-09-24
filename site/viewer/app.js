@@ -344,6 +344,114 @@ void main() {
   drop.position.set(0, 0, -0.55);
   root.add(drop);
 }
+// ---- 每张卡可换的三块：贴图 / 配置 uniform / 文案 ----
+// 卡壳 GLB 五张卡逐字节相同、六个材质是共享的 ShaderMaterial，所以"换一张卡"在 WebGL 侧
+// 只是换贴图、重算一批 uniform、改文案。init 和软导航共用这三个函数，保证两条路完全一致。
+async function loadCardTextures(cfg) {
+  const loader = new THREE.TextureLoader();
+  const blank = (rgba) => {
+    const tex = new THREE.DataTexture(new Uint8Array(rgba), 1, 1);
+    tex.needsUpdate = true;
+    return tex;
+  };
+  const [subject, background, text] = await Promise.all(
+    ["subject", "background", "text"].map((name) => loader.loadAsync(cfg.assets[name])),
+  );
+  // 线稿缺席时给 1x1 纯白：multiply 之后等于没有这一层。
+  const line = cfg.assets.lineart
+    ? await loader.loadAsync(cfg.assets.lineart)
+    : blank([255, 255, 255, 255]);
+  const hasFx = !!cfg.assets.effects;
+  const effects = hasFx ? await loader.loadAsync(cfg.assets.effects) : blank([0, 0, 0, 0]);
+  const back = cfg.assets.back ? await loader.loadAsync(cfg.assets.back) : blank([0, 0, 0, 0]);
+  // 多层主体的后 / 前层。单层卡不声明 subjectLayers，这里给 1x1 全透明，
+  // 着色器里的合成就退化回单层结果。
+  const rear = cfg.subjectLayers?.back?.src
+    ? await loader.loadAsync(cfg.subjectLayers.back.src)
+    : blank([0, 0, 0, 0]);
+  const fore = cfg.subjectLayers?.front?.src
+    ? await loader.loadAsync(cfg.subjectLayers.front.src)
+    : blank([0, 0, 0, 0]);
+  const tex = {
+    tSubject: subject,
+    tBackground: background,
+    tText: text,
+    tLine: line,
+    tEffects: effects,
+    tBack: back,
+    tSubjectBack: rear,
+    tSubjectFront: fore,
+  };
+  for (const t of Object.values(tex)) {
+    t.colorSpace = THREE.NoColorSpace;
+    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
+  }
+  return { tex, hasFx };
+}
+// 只由卡配置决定、与滑杆无关的那批 uniform（构图 / 安全区 / 层参数 / 模式开关）。
+function configUniformValues(cfg, pack) {
+  const p = cfg.parameters || {};
+  const layers = cfg.subjectLayers || {};
+  const offset = (layer) =>
+    new THREE.Vector2(layer?.offset?.[0] ?? 0, layer?.offset?.[1] ?? 0);
+  const imageAspect = pack.tex.tSubject.image.width / pack.tex.tSubject.image.height;
+  const fit =
+    cfg.artworkFit ||
+    (cfg.sourceMode === "reference"
+      ? [
+          Math.min(0.87, (0.87 * imageAspect) / (2 / 3)),
+          Math.min(0.87, (0.87 * (2 / 3)) / imageAspect),
+        ]
+      : [1, 1]);
+  return {
+    uDepthUnit: p.depthUnit ?? 1,
+    uFan: p.viewFan ?? 0,
+    uFit: new THREE.Vector2(...fit),
+    uFoil: p.foil ?? 0.52,
+    uFoilSat: p.foilSat ?? 1.35,
+    uSweepSoft: p.sweepSoft ?? 7,
+    uScale: p.subjectScale ?? 1,
+    uDepth: layers.mid?.depth ?? p.subjectDepth ?? 0.32,
+    uDepthBack: layers.back?.depth ?? 0,
+    uDepthFront: layers.front?.depth ?? 0,
+    uSizeBack: layers.back?.scale ?? 1,
+    uSizeMid: layers.mid?.scale ?? 1,
+    uSizeFront: layers.front?.scale ?? 1,
+    uOffsetBack: offset(layers.back),
+    uOffsetMid: offset(layers.mid),
+    uOffsetFront: offset(layers.front),
+    uBgDepth: p.backgroundDepth ?? -0.18,
+    uSafeScale: cfg.safeArea?.scale ?? 1,
+    // The shader's V axis is flipped relative to Blender's UV space, so the
+    // vertical safe-area offset needs a compensating transform (x is identical).
+    uSafeOffset: new THREE.Vector2(
+      cfg.safeArea?.offset?.[0] ?? 0,
+      1 - (cfg.safeArea?.scale ?? 1) - (cfg.safeArea?.offset?.[1] ?? 0),
+    ),
+    uFxDepth: p.effectsDepth ?? 0.14,
+    uHasFx: pack.hasFx ? 1 : 0,
+    uHasLine: cfg.assets.lineart ? 1 : 0,
+    uLineGlow: p.lineartGlow ?? 1,
+    uRelief: cfg.sourceMode === "relief" ? 1 : 0,
+  };
+}
+const COPY_FIELDS = [
+  ["card-title", "title"],
+  ["subtitle", "subtitle"],
+  ["description", "description"],
+  ["edition", "edition"],
+  ["about-description", "description"],
+  ["about-edition", "edition"],
+];
+// DOM 侧的"换卡"：标题文案、页头卡序的高亮、层面板的可用集合、默认工艺。
+function applyCardDom(cfg) {
+  document.title = [cfg.title, cfg.collection].filter(Boolean).join(" · ");
+  for (const [id, key] of COPY_FIELDS) $(id).textContent = cfg[key] || "";
+  $("about-title").textContent = [cfg.subtitle, cfg.title].filter(Boolean).join(" / ");
+  renderCardNav();
+  showLayerPanelGroups();
+  setFinish(cfg.appearance?.finish || defaultFinish);
+}
 // The header switch is shared by every card shell, so the whole label is
 // rendered here from the registry instead of being hand-written per page.
 function renderCardNav() {
@@ -427,18 +535,6 @@ async function init() {
   if (!load) throw Error("未找到编号为 " + id + " 的卡片");
   config = (await load()).default;
   document.title = [config.title, config.collection].filter(Boolean).join(" · ");
-  for (const [id, key] of [
-    ["card-title", "title"],
-    ["subtitle", "subtitle"],
-    ["description", "description"],
-    ["edition", "edition"],
-    ["about-description", "description"],
-    ["about-edition", "edition"],
-  ])
-    $(id).textContent = config[key] || "";
-  $("about-title").textContent = [config.subtitle, config.title]
-    .filter(Boolean)
-    .join(" / ");
   await document.fonts.load("500 46px FZJinLi");
   try {
     renderer = new THREE.WebGLRenderer({
@@ -472,112 +568,25 @@ async function init() {
   renderer.toneMapping = THREE.NoToneMapping;
   stage.append(renderer.domElement);
   renderer.domElement.setAttribute("aria-hidden", "true");
-  const textureLoader = new THREE.TextureLoader();
-  const textures = await Promise.all(
-    ["subject", "background", "text"].map((name) =>
-      textureLoader.loadAsync(config.assets[name]),
-    ),
-  );
-  const line = config.assets.lineart
-    ? await textureLoader.loadAsync(config.assets.lineart)
-    : new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1);
-  line.needsUpdate = true;
-  // Optional effects overlay (sparks/thorn deco): drawn between subject and text.
-  // A transparent 1x1 fallback keeps the front shader valid without it.
-  const hasFx = !!config.assets.effects;
-  const effects = hasFx
-    ? await textureLoader.loadAsync(config.assets.effects)
-    : new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
-  effects.colorSpace = THREE.NoColorSpace;
-  if (!hasFx) effects.needsUpdate = true;
-  // Back plate (燕云十六声 lockup + rules + edition): transparent gold art that
-  // the shader stamps onto its deep-navy filigree base. Absent it, the back stays plain.
-  const hasBack = !!config.assets.back;
-  const back = hasBack
-    ? await textureLoader.loadAsync(config.assets.back)
-    : new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
-  back.colorSpace = THREE.NoColorSpace;
-  if (!hasBack) back.needsUpdate = true;
-  // 多层主体的后 / 中 / 前层。单层卡不声明 subjectLayers，这里给 1x1 全透明，
-  // 着色器里的合成就退化回原来那种单层结果。
-  const layerBack = config.subjectLayers?.back;
-  // 中层可以只写 { depth, scale, offset } 而不给 src——素材本来就取 assets.subject，
-  // 这个条目只是用来放中层的调参，免得和别的层不对称。
-  const layerMid = config.subjectLayers?.mid;
-  const layerFront = config.subjectLayers?.front;
-  const layerOffset = (layer) =>
-    new THREE.Vector2(layer?.offset?.[0] ?? 0, layer?.offset?.[1] ?? 0);
-  const transparent = () => {
-    const tex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
-    tex.needsUpdate = true;
-    return tex;
-  };
-  const rearTex = layerBack?.src ? await textureLoader.loadAsync(layerBack.src) : transparent();
-  const foreTex = layerFront?.src ? await textureLoader.loadAsync(layerFront.src) : transparent();
-  [...textures, line, effects, back, rearTex, foreTex].forEach((t) => {
-    t.colorSpace = THREE.NoColorSpace;
-    t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
-  });
-  const p = config.parameters || {};
-  const imageAspect = textures[0].image.width / textures[0].image.height;
-  const fit =
-    config.artworkFit ||
-    (config.sourceMode === "reference"
-      ? [
-          Math.min(0.87, (0.87 * imageAspect) / (2 / 3)),
-          Math.min(0.87, (0.87 * (2 / 3)) / imageAspect),
-        ]
-      : [1, 1]);
+  const pack = await loadCardTextures(config);
   uniforms = {
-    tSubject: { value: textures[0] },
-    tBackground: { value: textures[1] },
-    tText: { value: textures[2] },
-    tLine: { value: line },
-    tEffects: { value: effects },
-    tBack: { value: back },
-    tSubjectBack: { value: rearTex },
-    tSubjectFront: { value: foreTex },
+    ...Object.fromEntries(
+      Object.entries(pack.tex).map(([name, value]) => [name, { value }]),
+    ),
+    ...Object.fromEntries(
+      Object.entries(configUniformValues(config, pack)).map(([name, value]) => [
+        name,
+        { value },
+      ]),
+    ),
     uTime: { value: 0 },
     uView: { value: new THREE.Vector3(0, 0, 1) },
     uEye: { value: new THREE.Vector3(0, 0, 20) },
     uCardSize: { value: new THREE.Vector2(6.3, 9.45) },
-    uDepthUnit: { value: p.depthUnit ?? 1 },
-    uFan: { value: p.viewFan ?? 0 },
-    uFit: { value: new THREE.Vector2(...fit) },
-    uFoil: { value: p.foil ?? 0.52 },
-    // 鲜艳度：膜的彩度绕自身亮度拉伸的倍率。1 是原来的味道，>1 更艳。
-    uFoilSat: { value: p.foilSat ?? 1.35 },
-    // 扫光柔和度：亮带的 pow 指数，越大越窄越硬。12 是原来写死的值。
-    uSweepSoft: { value: p.sweepSoft ?? 7 },
     // 下面两个只为 ?debug=fx 的二分开关存在，正常渲染恒为 1。
     uHasBand: { value: 1 },
     uHasStar: { value: 1 },
-    uScale: { value: p.subjectScale ?? 1 },
-    uDepth: { value: layerMid?.depth ?? p.subjectDepth ?? 0.32 },
-    uDepthBack: { value: layerBack?.depth ?? 0 },
-    uDepthFront: { value: layerFront?.depth ?? 0 },
-    uSizeBack: { value: layerBack?.scale ?? 1 },
-    uSizeMid: { value: layerMid?.scale ?? 1 },
-    uSizeFront: { value: layerFront?.scale ?? 1 },
-    uOffsetBack: { value: layerOffset(layerBack) },
-    uOffsetMid: { value: layerOffset(layerMid) },
-    uOffsetFront: { value: layerOffset(layerFront) },
-    uBgDepth: { value: p.backgroundDepth ?? -0.18 },
-    uSafeScale: { value: config.safeArea?.scale ?? 1 },
-    // The shader's V axis is flipped relative to Blender's UV space, so the
-    // vertical safe-area offset needs a compensating transform (x is identical).
-    uSafeOffset: {
-      value: new THREE.Vector2(
-        config.safeArea?.offset?.[0] ?? 0,
-        1 - (config.safeArea?.scale ?? 1) - (config.safeArea?.offset?.[1] ?? 0),
-      ),
-    },
-    uFxDepth: { value: p.effectsDepth ?? 0.14 },
-    uHasFx: { value: hasFx ? 1 : 0 },
     uFinish: { value: 0 },
-    uHasLine: { value: config.assets.lineart ? 1 : 0 },
-    uLineGlow: { value: p.lineartGlow ?? 1 },
-    uRelief: { value: config.sourceMode === "relief" ? 1 : 0 },
   };
   const material = (fragment) =>
     new THREE.ShaderMaterial({
@@ -604,18 +613,17 @@ async function init() {
   gltf.scene.traverse((ob) => {
     if (!ob.isMesh) return;
     const role = ob.material?.name;
-    if (role === "web_text" && config.sourceMode !== "relief") {
-      ob.visible = false;
-      return;
-    }
     // 内圈那道古金细边不要了（卡面自己就有描金线，再套一圈固定的金框会糊）。外圈的全息
     // 压边留着——它是卡片厚度之外唯一那条"彩色压边"，去掉之后卡的轮廓会显得生硬。
     if (/^内圈/.test(ob.name)) {
       ob.visible = false;
       return;
     }
-    if (role === "web_front") faces++;
+    // 材质先换上再谈可见性：非 relief 卡只是把文字层藏起来，换卡到 relief 模式时还要能
+    // 把它点亮，所以它必须一开始就拿着我们的 web_text 材质，而不是 GLB 里那个空材质。
     ob.material = materials[role] || materials.web_edge;
+    if (role === "web_text") ob.visible = config.sourceMode === "relief";
+    if (role === "web_front") faces++;
     if (role === "web_subject") reliefLayers.subject.push(ob);
     if (role === "web_effects") reliefLayers.effects.push(ob);
     if (role === "web_text") reliefLayers.text.push(ob);
@@ -634,6 +642,8 @@ async function init() {
   addGroundShadow(cardBox.y);
   addDropShadow(cardBox.x, cardBox.y);
   setupControls();
+  applyCardDom(config);
+  setupSoftNav();
   document
     .querySelectorAll("button[disabled],input[disabled]")
     .forEach((el) => (el.disabled = false));
@@ -663,26 +673,37 @@ async function init() {
     camera,
     reset,
     flip,
+    softNavigate,
+    bundles: () => [...bundles.keys()],
     modelSource: config.assets.model,
     layers: reliefLayers,
     getState: () => ({ auto, flipped, finish, zoom }),
   };
+  const bootLayers = config.subjectLayers || {};
+  const bootParams = config.parameters || {};
   console.info(
     `[holo-card] ${VIEWER_VERSION} · 构建于 ${BUILT_AT} · 卡 ${id} · 主体 ${
-      1 + (layerBack ? 1 : 0) + (layerFront ? 1 : 0)
-    } 层 · viewFan ${p.viewFan ?? 0} · depthUnit ${p.depthUnit ?? 1}`,
+      1 + (bootLayers.back ? 1 : 0) + (bootLayers.front ? 1 : 0)
+    } 层 · viewFan ${bootParams.viewFan ?? 0} · depthUnit ${bootParams.depthUnit ?? 1}`,
   );
-  if (layerBack || layerFront) {
+  if (bootLayers.back || bootLayers.front) {
     // 多层卡再补一行每层参数：调完滑杆先看这里，确认页面上生效的是不是配置里那组值。
     const brief = (name, layer) => {
       const [ox = 0, oy = 0] = layer?.offset ?? [];
       return `${name} d${(layer?.depth ?? 0).toFixed(2)} s${(layer?.scale ?? 1).toFixed(2)} o${ox.toFixed(3)},${oy.toFixed(3)}`;
     };
     console.info(
-      `[holo-card] 层参数 ${brief("后", layerBack)} ｜ ${brief("中", layerMid ?? { depth: p.subjectDepth })} ｜ ${brief("前", layerFront)}`,
+      `[holo-card] 层参数 ${brief("后", bootLayers.back)} ｜ ${brief(
+        "中",
+        bootLayers.mid ?? { depth: bootParams.subjectDepth },
+      )} ｜ ${brief("前", bootLayers.front)}`,
     );
   }
-  setFinish(config.appearance?.finish || defaultFinish);
+  applyCardDom(config);
+  // 软导航的记账：当前卡、当前绑在 uniform 上的那套贴图、以及带 state 的首条历史。
+  currentId = id;
+  livePack = pack;
+  history.replaceState({ holo: id }, "", location.href);
   setAuto(!media.matches);
   // ?face=back opens straight onto the reverse: flip() also freezes the idle
   // sway, so the back plate reads flat instead of mid-rotation.
@@ -1185,11 +1206,7 @@ function setupFxDebug() {
   console.info("[holo-card] ?debug=fx 面板已挂载，共", fx.length, "个开关");
 }
 function setupControls() {
-  if (config.sourceMode === "relief") {
-    // Layered card relief: subject base plane 0..0.9, effects/text above it.
-    $("depth").min="0.0";$("depth").max="0.9";
-    $("scale").min="0.92";$("scale").max="1.3";
-  }
+  syncSliderRanges();
   settings.forEach(([id, name]) => {
     $(id).value = uniforms[name].value;
     updateInput(id, name);
@@ -1354,6 +1371,150 @@ function saveCard() {
     console.error(error);
     notice("图片未能保存，请重试");
   }
+}
+function syncSliderRanges() {
+  if (config.sourceMode === "relief") {
+    // Layered card relief: subject base plane 0..0.9, effects/text above it.
+    $("depth").min = "0.0";
+    $("depth").max = "0.9";
+    $("scale").min = "0.92";
+    $("scale").max = "1.3";
+  } else {
+    $("depth").min = "-0.6";
+    $("depth").max = "0.9";
+    $("scale").min = "0.95";
+    $("scale").max = "1.35";
+  }
+}
+// ---- 软导航：卡与卡之间不换文档 ----
+// 多页结构对深链和 SEO 友好，代价是每次换卡都要重启一个 WebGL 上下文、重下六张贴图，过渡
+// 只能是"旧页快照 → 新页从头加载"。但换卡其实只需要换贴图（卡壳 GLB 逐字节相同、材质共享），
+// 所以卡页之间的跳转在这里被拦下来、在同一个上下文里完成：先把卡转到侧棱（投影宽度归零的那
+// 一帧）换贴图与文案，再转回来，接缝看不见。首页没有画布，landing ↔ 卡 仍是真导航——three 的
+// 启动成本在那一侧，靠 hover 预取把首屏前的下载提前。
+const bundles = new Map(); // id -> { config, pack }；上限两份，多出来的立刻释放贴图
+let currentId = null;
+let livePack = null;
+let navBusy = false;
+
+const cardIdOf = (url) => {
+  const m = new URL(url, location.href).pathname.match(/^\/(\d{3})\/(?:index\.html)?$/);
+  return m ? m[1] : null;
+};
+const routeOf = (id) => `/${id}/index.html`;
+
+async function loadBundle(id) {
+  const hit = bundles.get(id);
+  if (hit) return hit;
+  const load = import.meta.glob("../*/card.config.js")[`../${id}/card.config.js`];
+  if (!load) throw Error("未找到编号为 " + id + " 的卡片");
+  const bundle = { config: (await load()).default };
+  bundle.pack = await loadCardTextures(bundle.config);
+  bundles.set(id, bundle);
+  // 预取不能无限攒：每套贴图在 GPU 上约 6×6MB，留当前卡 + 一份预取就够。
+  while (bundles.size > 2) {
+    const oldest = bundles.keys().next().value;
+    if (oldest === currentId || oldest === id) break;
+    for (const t of Object.values(bundles.get(oldest).pack.tex)) t.dispose();
+    bundles.delete(oldest);
+  }
+  return bundle;
+}
+// 转到侧棱。直接写 rotation 并把 targetY 钉成同一个值，animate() 的缓动就变成空转，
+// 不会和这里的补间打架；reduce-motion 时直接落位。
+function turnTo(to, ms) {
+  return new Promise((resolve) => {
+    targetX = 0;
+    // 隐藏标签页里 rAF 停摆，补间会永远等不到下一帧；反正没人看，直接落位。
+    if (media.matches || ms <= 0 || document.hidden) {
+      root.rotation.y = targetY = to;
+      resolve();
+      return;
+    }
+    const from = root.rotation.y;
+    const t0 = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t0) / ms);
+      const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      root.rotation.y = targetY = from + (to - from) * e;
+      if (k < 1) requestAnimationFrame(step);
+      else resolve();
+    };
+    requestAnimationFrame(step);
+  });
+}
+async function softNavigate(id, push = true) {
+  if (navBusy || !root || id === currentId) return;
+  navBusy = true;
+  const wasAuto = auto;
+  setAuto(false);
+  const t0 = performance.now();
+  const bar = document.querySelector(".artwork-bar");
+  // 贴图没预取到时要等下载：先把文案淡掉当作"在换了"的反馈，别让用户以为点坏了。
+  bar?.classList.add("swapping");
+  let bundle;
+  try {
+    bundle = await loadBundle(id);
+  } catch (error) {
+    // 配置或贴图拿不到就别把用户扣在原地：退回真导航，让服务器兜底。
+    console.warn("[holo-card] 软导航失败，回退真导航：", error);
+    location.href = routeOf(id);
+    return;
+  }
+  await turnTo(Math.PI / 2, 240);
+  const dead = livePack;
+  currentId = id;
+  config = bundle.config;
+  for (const [name, value] of Object.entries(configUniformValues(config, bundle.pack)))
+    uniforms[name].value = value;
+  for (const [name, texture] of Object.entries(bundle.pack.tex))
+    uniforms[name].value = texture;
+  livePack = bundle.pack;
+  reliefLayers.text.forEach((mesh) => (mesh.visible = config.sourceMode === "relief"));
+  applyCardDom(config);
+  syncSliderRanges();
+  reset();
+  if (push) history.pushState({ holo: id }, "", routeOf(id));
+  renderCardNav(); // pushState 之后再画一次，aria-current 才指得对新地址
+  root.rotation.y = targetY = -Math.PI / 2;
+  await turnTo(0, 300);
+  // 不自摆时落回和首屏一样的微侧姿态，别停在正对镜头的死板角度。
+  if (!auto) {
+    targetX = -0.035;
+    targetY = -0.15;
+  }
+  bar?.classList.remove("swapping");
+  // 旧贴图若没被缓存引用就可以还给 GPU；被缓存引用的（比如刚离开的这张，供后退秒开）留着。
+  if (dead && ![...bundles.values()].some((b) => b.pack === dead))
+    for (const t of Object.values(dead.tex)) t.dispose();
+  if (wasAuto && !media.matches) setAuto(true);
+  navBusy = false;
+  console.info(
+    `[holo-card] 软导航 → ${id} · ${(performance.now() - t0).toFixed(0)}ms · 贴图 ${
+      renderer.info.memory.textures
+    } 个`,
+  );
+}
+function setupSoftNav() {
+  window.addEventListener("popstate", (e) => {
+    const id = e.state?.holo || cardIdOf(location.href);
+    if (id) softNavigate(id, false);
+  });
+  document.addEventListener("click", (e) => {
+    if (e.defaultPrevented || e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = e.target.closest?.("a[href]");
+    const id = a && cardIdOf(a.href);
+    if (!id) return;
+    e.preventDefault();
+    softNavigate(id);
+  });
+  // 指针划过卡序就把那一卡的东西先拉下来，点击时贴图多半已经在显存里了。
+  document.addEventListener("pointerover", (e) => {
+    const a = e.target.closest?.(".card-link");
+    const id = a && cardIdOf(a.href);
+    if (id && id !== currentId && !bundles.has(id)) loadBundle(id).catch(() => {});
+  });
 }
 function animate(now) {
   const dt = Math.min((now - lastTime) / 1000, 0.06) || 0;

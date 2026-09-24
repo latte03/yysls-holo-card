@@ -519,6 +519,16 @@ button svg {
   margin: 12px 0 0;
   line-height: 1.5;
 }
+/* 软导航换卡时，卡转到侧棱（看不见）的那一帧文案和朝向按钮一起淡出，转回来再淡入，
+   否则文字会比卡面先跳一下。真导航没有 .swapping 这个类，这两条规则不参与。 */
+.artwork-title,
+.bar-center {
+  transition: opacity 0.16s;
+}
+.artwork-bar.swapping .artwork-title,
+.artwork-bar.swapping .bar-center {
+  opacity: 0;
+}
 /* Middle column of the artwork bar: 正面/背面 + 自动旋转 + 下载，三个都是卡片本身的操作，
    所以放成一排（下载原来在页头右上角，离它要保存的那张卡太远）。 */
 .bar-center {
