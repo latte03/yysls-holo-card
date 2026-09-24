@@ -53,7 +53,7 @@ void main() {
 const common = `
 precision highp float;
 varying vec2 vUv;
-uniform float uTime, uFoil, uScale, uDepth, uBgDepth, uFinish, uHasLine, uRelief, uSafeScale, uFxDepth, uHasFx;
+uniform float uTime, uFoil, uScale, uDepth, uDepthBack, uDepthFront, uBgDepth, uFinish, uHasLine, uRelief, uSafeScale, uFxDepth, uHasFx;
 uniform vec2 uFit, uSafeOffset;
 uniform vec3 uView;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
@@ -94,7 +94,7 @@ float v1star(vec2 p){vec2 q=p*105.,id=floor(q),f=fract(q);float first=9.,second=
 const frontFragment =
   common +
   `
-uniform sampler2D tSubject, tBackground, tText, tLine, tEffects;
+uniform sampler2D tSubject, tBackground, tText, tLine, tEffects, tSubjectBack, tSubjectFront;
 void main() {
   vec2 uv = vUv;
   vec2 su = ((parallax(uv,uDepth)-.5)*uScale/uFit+.5)*uSafeScale+uSafeOffset;
@@ -107,7 +107,18 @@ void main() {
   float band = v1sweep(uv);
   subject.rgb = mix(subject.rgb,overlay(subject.rgb,foil),amount*.16);
   bg = mix(bg,overlay(bg,foil),amount*.20);
-  vec3 col = mix(bg,subject.rgb,subject.a);
+  // 多层主体：后层先压到背景上，中层（tSubject，也是线辉光贴附的那层）之上再压前景层。
+  // 每层有自己的视差深度，所以各取各的 UV；单层卡这两张是 1x1 全透明，合成退化回原样。
+  vec2 ru = parallax(uv,uDepthBack);
+  vec4 rear = texture2D(tSubjectBack,clamp(ru,0.,1.));
+  rear.a *= inside(ru)*(1.-uRelief);
+  rear.rgb = mix(rear.rgb,overlay(rear.rgb,foil),amount*.16);
+  vec3 col = mix(mix(bg,rear.rgb,rear.a),subject.rgb,subject.a);
+  vec2 fu = parallax(uv,uDepthFront);
+  vec4 fore = texture2D(tSubjectFront,clamp(fu,0.,1.));
+  fore.a *= inside(fu)*(1.-uRelief);
+  fore.rgb = mix(fore.rgb,overlay(fore.rgb,foil),amount*.16);
+  col = mix(col,fore.rgb,fore.a);
   if (uFinish > 2.5) col = col * vec3(1.02, .95, .78) + vec3(.05, .012, 0.0);
   // Effects layer floats between the subject and the text: above the character,
   // below the typography, with its own mid-depth parallax.
@@ -115,7 +126,9 @@ void main() {
   vec4 fx = texture2D(tEffects,clamp(eu,0.,1.));
   col = mix(col,fx.rgb,fx.a*(1.-uRelief)*uHasFx);
   col += foil*band*amount*.16;
-  col += vec3(.66,.86,1.)*v1star(bu)*amount*.45*(1.-subject.a*.7);
+  // 星屑由整个主体轮廓遮挡，不只是中间那层——翅膀也要挡住它。
+  float solid = 1.-(1.-subject.a)*(1.-rear.a)*(1.-fore.a);
+  col += vec3(.66,.86,1.)*v1star(bu)*amount*.45*(1.-solid*.7);
   float line = (1.-smoothstep(.06,.25,texture2D(tLine,clamp(su,0.,1.)).r))*uHasLine;
   col += vec3(1.,.94,.78)*line*inside(su)*subject.a*band*amount*.35;
   vec4 text = texture2D(tText,uv);
@@ -352,7 +365,18 @@ async function init() {
     : new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
   back.colorSpace = THREE.NoColorSpace;
   if (!hasBack) back.needsUpdate = true;
-  [...textures, line, effects, back].forEach((t) => {
+  // 多层主体的后 / 前两层。单层卡不声明 subjectLayers，这里给 1x1 全透明，
+  // 着色器里的合成就退化回原来那种单层结果。
+  const layerBack = config.subjectLayers?.back;
+  const layerFront = config.subjectLayers?.front;
+  const transparent = () => {
+    const tex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
+    tex.needsUpdate = true;
+    return tex;
+  };
+  const rearTex = layerBack?.src ? await textureLoader.loadAsync(layerBack.src) : transparent();
+  const foreTex = layerFront?.src ? await textureLoader.loadAsync(layerFront.src) : transparent();
+  [...textures, line, effects, back, rearTex, foreTex].forEach((t) => {
     t.colorSpace = THREE.NoColorSpace;
     t.anisotropy = Math.min(8, renderer.capabilities.getMaxAnisotropy());
   });
@@ -373,12 +397,16 @@ async function init() {
     tLine: { value: line },
     tEffects: { value: effects },
     tBack: { value: back },
+    tSubjectBack: { value: rearTex },
+    tSubjectFront: { value: foreTex },
     uTime: { value: 0 },
     uView: { value: new THREE.Vector3(0, 0, 1) },
     uFit: { value: new THREE.Vector2(...fit) },
     uFoil: { value: p.foil ?? 0.52 },
     uScale: { value: p.subjectScale ?? 1 },
     uDepth: { value: p.subjectDepth ?? 0.32 },
+    uDepthBack: { value: layerBack?.depth ?? 0 },
+    uDepthFront: { value: layerFront?.depth ?? 0 },
     uBgDepth: { value: p.backgroundDepth ?? -0.18 },
     uSafeScale: { value: config.safeArea?.scale ?? 1 },
     // The shader's V axis is flipped relative to Blender's UV space, so the
@@ -486,7 +514,20 @@ async function init() {
 // the cursor. If WebGL comes back, the full shader engine takes over instead.
 function fallback3D(error) {
   console.warn("[holo-card] WebGL unavailable, using CSS-3D fallback:", error);
-  const roleZ = { background: -48, effects: -25, subject: -8, lineart: 24, text: 28 };
+  const roleZ = {
+    background: -48,
+    effects: -25,
+    subject_back: -18,
+    subject: -8,
+    subject_front: 2,
+    lineart: 24,
+    text: 28,
+  };
+  // 多层主体的两层在 config.subjectLayers 里（带各自的视差深度），其余层仍在 config.assets 下。
+  const layerSrc = {
+    subject_back: config?.subjectLayers?.back?.src,
+    subject_front: config?.subjectLayers?.front?.src,
+  };
   const wrap = document.createElement("div");
   wrap.className = "fallback3d";
   const flipper = document.createElement("div");
@@ -497,12 +538,13 @@ function fallback3D(error) {
   const front = document.createElement("div");
   front.className = "face3d front3d";
   const layers = new Map();
-  for (const name of ["background", "effects", "subject", "lineart", "text"]) {
-    if (!config?.assets?.[name]) continue;
+  for (const name of ["background", "effects", "subject_back", "subject", "subject_front", "lineart", "text"]) {
+    const src = layerSrc[name] ?? config?.assets?.[name];
+    if (!src) continue;
     const layer = document.createElement("div");
     layer.className = "layer3d";
     const img = document.createElement("img");
-    img.src = config.assets[name];
+    img.src = src;
     img.alt = config.title || "卡片";
     img.loading = "eager";
     layer.append(img);

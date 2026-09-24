@@ -15,6 +15,10 @@ DEFAULT_DELIVERY = {
     'background': 'background_orig.png',
 }
 
+# 多层主体的层名，按 z 序（后→中→前）。多层卡在 delivery.subjectLayers 里声明，
+# 单层卡只给 subject 一项——prep 对两者的处理完全一致，都是"逐层增强 + 固化一张扁平并集"。
+SUBJECT_Z_ORDER = ('subject_back', 'subject_mid', 'subject_front')
+
 
 def card_root():
     """取 --card 指定的卡目录（相对仓库根或绝对路径皆可），并校验配置在位。"""
@@ -36,6 +40,28 @@ def config(root):
 
 def delivery(cfg, layer):
     return (cfg.get('delivery') or {}).get(layer) or DEFAULT_DELIVERY[layer]
+
+
+def subject_layers(cfg):
+    """主体交付件，按 z 序（后→中→前）返回 [(资产层名, source 文件名), ...]。
+
+    单层卡返回 [('subject', <delivery.subject>)]；多层卡在 card-config.json 里写
+
+        "delivery": { "subjectLayers": { "subject_back": "...", "subject_mid": "...",
+                                         "subject_front": "..." } }
+
+    映射的键是资产层名（决定 assets/ 下的文件名与网页侧图层的角色），值才是 source/ 里的文件名。
+    声明哪些层随卡片需要，但返回顺序一律按 SUBJECT_Z_ORDER，不受 JSON 里书写顺序影响。
+    """
+    declared = (cfg.get('delivery') or {}).get('subjectLayers')
+    if not declared:
+        return [('subject', delivery(cfg, 'subject'))]
+    if not isinstance(declared, dict):
+        sys.exit('delivery.subjectLayers 要写成 {资产层名: source 文件名} 的映射')
+    unknown = [key for key in declared if key not in SUBJECT_Z_ORDER]
+    if unknown:
+        sys.exit(f'未知的主体层名 {unknown}；只认 {list(SUBJECT_Z_ORDER)}')
+    return [(key, declared[key]) for key in SUBJECT_Z_ORDER if key in declared]
 
 
 def darken(cfg):

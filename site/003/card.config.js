@@ -9,11 +9,17 @@ export default {
   "description": "春不渡客便剑指南春",
   "assets": {
     "model": "/assets/003/card.glb",
-    "subject": "/assets/003/subject.webp",
+    "subject": "/assets/003/subject_mid.webp",
     "background": "/assets/003/background.webp",
     "text": "/assets/003/text.webp",
     "lineart": "/assets/003/lineart.webp",
     "back": "/assets/003/back.webp"
+  },
+  // 主体分三层：后翅膀 / 人物（assets.subject，线辉光也贴这层）/ 鸟头+翅膀。
+  // 各自视差深度拉开立体感；单层卡不写这一项，合成自动退化成一层。
+  "subjectLayers": {
+    "back": { "src": "/assets/003/subject_back.webp", "depth": 0.35 },
+    "front": { "src": "/assets/003/subject_front.webp", "depth": 0.75 }
   },
   "parameters": {
     "subjectScale": 1.0,

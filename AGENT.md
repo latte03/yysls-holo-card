@@ -35,6 +35,23 @@
 
 改卡面文案（title/subtitle/technique/edition/collection/description）**两处都要改**。
 
+### 4. 主体可以是多层（z 序固定：后 → 中 → 前）
+
+卡面主体默认一层；要做出真视差分层时，两层配置各写一半，**层名只有三个**：
+`subject_back` / `subject_mid` / `subject_front`。
+
+| 位置 | 写什么 |
+|---|---|
+| `cards/<id>-*/card-config.json` → `delivery.subjectLayers` | `{层名: source 文件名}`，管线按 z 序读 |
+| `site/<id>/card.config.js` → `subjectLayers.back` / `.front` | `{src, depth}`；中层不走这里，仍是 `assets.subject` + `parameters.subjectDepth` |
+
+- `prep_layers.py` 逐层增强后各落一张 `assets/<层名>.png`，**另外固化一张 `assets/subject.png`**——
+  多层时它是**并集轮廓**，是线稿配准（`align_lineart` 读它）、辉光遮罩、`preview-composite.png`
+  的唯一依据。**所以 `assets/subject.png` 不是输入**，多层卡在 `source/` 里也没有这个文件名。
+- 着色器（`frontFragment`）把后层压在背景上、前层压在中层之上，每层各取自己的视差 UV；
+  星屑遮挡用三层并集 alpha；**线辉光只贴中层**（它按中层 UV 采样、乘中层 alpha）。
+- 单层卡不写 `subjectLayers`：网页侧给两张 1x1 全透明贴图，合成精确退化回单层结果。
+
 ## 路径硬事实（错一个就 404 或构建失败）
 
 - 卡壳必须在 `site/<id>/index.html`，**不能**是 `site/cards/<id>/`——Vite 按目录结构服务，

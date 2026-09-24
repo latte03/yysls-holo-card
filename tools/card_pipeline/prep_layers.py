@@ -1,4 +1,5 @@
-"""Normalize v3 layers: true-alpha subject, lineart masked to new silhouette, uniform-darkened background."""
+"""Normalize v3 layers: true-alpha subject (one or more z-ordered layers), lineart masked to the
+union silhouette, uniform-darkened background."""
 import sys
 from pathlib import Path
 
@@ -13,7 +14,7 @@ from align_lineart import (
     register as align_register,
     residual as align_residual,
 )
-from common import card_root, config, darken, delivery
+from common import card_root, config, darken, delivery, subject_layers
 
 ROOT = card_root()
 CFG = config(ROOT)
@@ -22,12 +23,29 @@ DELIVERY = ROOT / 'source'
 W, H = 1024, 1536
 DARKEN = darken(CFG)
 
-# 交付即 1024x1536 真透明满幅主体时，这里只是直通：不裁切、不位移，只做惯常的饱和/对比提升。
-subject = Image.open(DELIVERY / delivery(CFG, 'subject')).convert('RGBA').resize((W, H), Image.LANCZOS)
-rgb = ImageEnhance.Contrast(ImageEnhance.Color(Image.merge('RGB', subject.split()[:3])).enhance(1.10)).enhance(1.08)
-subject = Image.merge('RGBA', (*rgb.split(), subject.split()[3]))
-subject.save(SRC / 'subject.png')
-sa = np.asarray(subject)[..., 3] / 255.0
+def enhance(im):
+    # 交付即 1024x1536 真透明满幅主体时，这里只是直通：不裁切、不位移，只做惯常的饱和/对比提升。
+    rgb = ImageEnhance.Contrast(ImageEnhance.Color(Image.merge('RGB', im.split()[:3])).enhance(1.10)).enhance(1.08)
+    return Image.merge('RGBA', (*rgb.split(), im.split()[3]))
+
+
+# 主体按 z 序（后→前）逐层增强。单层卡只有一层，走的还是原来那条链。
+layers = []
+for name, source in subject_layers(CFG):
+    layer = enhance(Image.open(DELIVERY / source).convert('RGBA').resize((W, H), Image.LANCZOS))
+    if name != 'subject':          # 单层卡没有独立层名，它本身就是下面那张固化层
+        layer.save(SRC / f'{name}.png')
+    layers.append(layer)
+
+# 主体固化层 assets/subject.png：线稿配准（align_lineart 读它）、辉光遮罩、preview 都按这一张算。
+# 单层卡就是那层本身；多层卡是并集轮廓——线稿只该对着整个主体的边缘打分，不该只看中层。
+flat = layers[0]
+if len(layers) > 1:
+    flat = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    for layer in layers:
+        flat.alpha_composite(layer)
+flat.save(SRC / 'subject.png')
+sa = np.asarray(flat)[..., 3] / 255.0
 
 
 def load_line_source():
@@ -72,6 +90,6 @@ bga = np.asarray(bg, dtype=np.float64) * DARKEN
 Image.fromarray(bga.round().astype(np.uint8), 'RGB').save(SRC / 'background.png')
 
 comp = bg.convert('RGBA').copy()
-comp.alpha_composite(subject)
+comp.alpha_composite(flat)
 comp.convert('RGB').save(ROOT / 'preview-composite.png')
 print('subject transparent', round(float((sa < 0.06).mean()), 3), 'solid', round(float((sa > 0.5).mean()), 3))

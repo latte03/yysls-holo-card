@@ -80,6 +80,22 @@ mv $CARD/source/background.png $CARD/source/background_orig.png  # 背景原件�
 ```
 
 `delivery` 只在交付名不是默认值时才写；`darken` 见第 2 节。
+
+**主体多层**（可选，003 用了）：把 `delivery.subjectLayers` 写成 `{资产层名: source 文件名}`，
+层名只认 `subject_back` / `subject_mid` / `subject_front`——按 z 序（后→中→前）读，与 JSON 里怎么写顺序无关：
+
+```json
+"delivery": {
+  "subjectLayers": {"subject_back": "subject_back.png",
+                    "subject_mid": "subject_mid.png",
+                    "subject_front": "subject_front.png"}
+}
+```
+
+`prep_layers.py` 逐层做同样的饱和/对比增强、各落一张 `assets/<层名>.png`，**另外固化一张
+`assets/subject.png`**（多层时是并集轮廓）。这张固化层是线稿配准（`align_lineart` 读它）、辉光遮罩
+（`la[sa<0.5]=255`）和 `preview-composite.png` 的唯一依据——所以多层卡在 `source/` 里**没有**
+`subject.png` 这个文件，别把它当输入去改。
 `font` 字段只是记录，真正渲染卡背编号的是 `tools/card_pipeline/make_back.py`，它按
 `ROOT / '..' / '..' / 'brand' / 'fonts' / 'NotoSerif-SemiBold.ttf'`（ROOT 即 `--card` 给的卡目录）
 相对定位仓库内字体，SIL OFL，许可证在 `brand/fonts/OFL.txt`。**不要改成系统字体路径**：
@@ -180,6 +196,12 @@ export default {
     "back": "/assets/00X/back.webp"
   },
   "parameters": {"subjectScale": 1.0, "subjectDepth": 0.55, "backgroundDepth": -0.45, "foil": 0.65},
+  // 多层主体才写这段：assets.subject 永远是中层（人物），线辉光也贴它；
+  // 后 / 前两层各自带视差深度，深度差越大分层越明显。
+  "subjectLayers": {
+    "back":  {"src": "/assets/00X/subject_back.webp",  "depth": 0.35},
+    "front": {"src": "/assets/00X/subject_front.webp", "depth": 0.75}
+  },
   "safeArea": {"scale": 1.0, "offset": [0, 0]},
   "appearance": {"background": "#f4f2ee", "finish": "pearl"}
 };
@@ -191,9 +213,11 @@ export default {
 python3 -c "
 from PIL import Image; import pathlib
 src=pathlib.Path('cards/00X-*/assets'); dst=pathlib.Path('site/public/assets/00X')
-for n in ('subject','background','text','lineart','back'):
-    Image.open(src/f'{n}.png').save(dst/f'{n}.webp','WEBP',
-        quality=92 if n in ('subject','background') else 95, method=6)"
+for n in ('subject','subject_back','subject_mid','subject_front','background','text','lineart','back'):
+    p=src/f'{n}.png'
+    if not p.exists(): continue     # 单层卡没有 subject_back/mid/front 那三张
+    Image.open(p).save(dst/f'{n}.webp','WEBP',
+        quality=92 if n.startswith('subject') or n=='background' else 95, method=6)"
 ```
 
 `cards.manifest.js` 加一条（**入口、首页链接、页头卡序全由它驱动，不用改 HTML**）：

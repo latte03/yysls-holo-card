@@ -8,6 +8,13 @@
   "description": "春不渡客便剑指南春",
   "font": "brand/fonts/NotoSerif-SemiBold.ttf",
   "darken": 1.0,
+  "delivery": {
+    "subjectLayers": {
+      "subject_back": "subject_back.png",
+      "subject_mid": "subject_mid.png",
+      "subject_front": "subject_front.png"
+    }
+  },
   "parameters": {
     "subjectScale": 1.0,
     "subjectDepth": 0.55,

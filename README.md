@@ -25,7 +25,7 @@ holo-card/
 │   ├─ 001-buran/          例外：prep 有专属裁切/位移逻辑，脚本留在卡根原地
 │   ├─ 002-yaoyaoxin/
 │   ├─ 003-tingyunyu/
-│   │   ├─ card-config.json   卡级数据：文案 + 合成参数 + darken + delivery 交付名
+│   │   ├─ card-config.json   卡级数据：文案 + 合成参数 + darken + delivery 交付名（含多层主体声明）
 │   │   ├─ source/            用户交付的原始素材，只读，不要改动
 │   │   ├─ assets/            构建产物（subject/text/lineart/background/back）
 │   │   ├─ card.blend          Blender 工程（贴图是 packed 的）
@@ -87,6 +87,7 @@ python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>
 # 3. 卡壳：各卡 card.glb 逐字节相同，直接复用（本机无 Blender，也不需要）
 cp site/public/assets/003/card.glb site/public/assets/00X/
 # 4. 图层转 WebP 进 site/public/assets/<卡号>/，写 site/<卡号>/card.config.js
+#    主体要分层时：card-config.json 写 delivery.subjectLayers，card.config.js 写 subjectLayers（见 AGENT.md 第 4 条）
 # 5. cards.manifest.js 加一条（壳页由它扇出，不用手写也不用拷）
 # 6. cd site && pnpm build
 ```
