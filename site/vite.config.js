@@ -13,6 +13,10 @@ const here = import.meta.dirname;
 export default defineConfig({
   base: '/',
   appType: 'mpa',
+  // 控制台版本戳用的构建时间（app.js 会连同版本号一起打印，好区分本地/线上/缓存的是哪一版）。
+  define: {
+    __BUILT_AT__: JSON.stringify(new Date().toISOString()),
+  },
   build: {
     outDir: 'dist',
     emptyOutDir: true,

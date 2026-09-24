@@ -43,14 +43,31 @@
 | 位置 | 写什么 |
 |---|---|
 | `cards/<id>-*/card-config.json` → `delivery.subjectLayers` | `{层名: source 文件名}`，管线按 z 序读 |
-| `site/<id>/card.config.js` → `subjectLayers.back` / `.front` | `{src, depth}`；中层不走这里，仍是 `assets.subject` + `parameters.subjectDepth` |
+| `site/<id>/card.config.js` → `subjectLayers` | `{back, mid, front}`，每层 `{src?, depth, scale, offset}` |
 
+- `subjectLayers` 里每层三个调参：`depth` 视差深度、`scale` 在整体「画面比例」（`parameters.subjectScale`）
+  之上的倍率、`offset` 卡面位移（uv 单位，`0.01` = 卡宽 1%）。卡片页面板的
+  「大小 / 左右 / 上下 / 景深」四行就是它们，**多层卡才有**（单层卡面板保持原样）。
+- `mid` 只写调参、**不给 `src`**：中层素材永远取 `assets.subject`，中层的 `depth` 也就是
+  面板上「画面景深」那一行管的那个值（多层卡里那一行会被藏掉，改由「中层 · 景深」接管，
+  避免两根滑杆抢同一个 uniform）。后 / 前层仍必须给 `src`，缺哪层那组滑杆就不出现。
 - `prep_layers.py` 逐层增强后各落一张 `assets/<层名>.png`，**另外固化一张 `assets/subject.png`**——
   多层时它是**并集轮廓**，是线稿配准（`align_lineart` 读它）、辉光遮罩、`preview-composite.png`
   的唯一依据。**所以 `assets/subject.png` 不是输入**，多层卡在 `source/` 里也没有这个文件名。
 - 着色器（`frontFragment`）把后层压在背景上、前层压在中层之上，每层各取自己的视差 UV；
-  星屑遮挡用三层并集 alpha；**线辉光只贴中层**（它按中层 UV 采样、乘中层 alpha）。
+  星屑遮挡用三层并集 alpha；**线辉光只贴中层**（它按中层 UV 采样、乘中层 alpha），
+  颜色是 `v1spectrum` 的彩虹而不是单色：相位取**沿带方向**的梯度（`uv.y*.83-uv.x*.35`）加视线项，
+  所以一条亮线上从暖到冷铺开、倾斜时整体淌色；换成 `band` 自己的相位就只会整条同色一起变。
+  辉光的亮窗比箔光宽（`glowBand = pow(v1phase,6)` 对箔光的 `v1sweep = pow(v1phase,12)`）：幂 12 的
+  半高宽只占周期 10.7%，描金线只在很窄的掠带里亮一下；放宽只管辉光，不动箔光那道锐利的扫光。
+  **强度 = `parameters.lineartGlow`（缺省 1）× 光泽滑杆**：辉光天生跟着「光泽」走，细线的卡
+  （003 是 1.4）需要单独加强时用这个倍率，不必把整卡的反光一起推亮。
+  改这三层的采样坐标只需动 `fitUV(p, size, offset)` 一处，三个调用点各传自己那层。
 - 单层卡不写 `subjectLayers`：网页侧给两张 1x1 全透明贴图，合成精确退化回单层结果。
+  CSS-3D 降级路径（WebGL 关掉时）也认这套参数，落成每层的 `translate`/`scale` +
+  一个 z 倍率；线稿跟着中层走，和着色器里 `lineart` 用 `su` 采样保持一致。
+- 面板那三组滑杆的显示/隐藏由 `showLayerPanelGroups()` 单独负责，WebGL 路径和降级路径
+  共用——加新卡时不用改模板。
 
 ## 路径硬事实（错一个就 404 或构建失败）
 
@@ -166,6 +183,14 @@ w.__holo.error               // 有值就是真失败
   `$("edition").textContent` 抛 null、整卡加载失败。页头标签现由 `renderCardNav()` 从清单渲染。
 - **站点素材只放 WebP**（省约 75%，alpha 与 PNG 一致，差异只在 alpha<128 的不可见区域）；
   PNG 原件留在 `cards/*/assets/`。
+- **线稿辉光看"墨的面积"而不是"有多黑"**：管线只认 `L<140` 的墨（`_load_ink`，也是配准打分口径），
+  着色器窗口又在 `L<76` 就满格——所以"把线画黑一档"不会更亮，"把笔画做粗做实"才会（003 重描版
+  墨区 4.1%→10.6%，辉光权重 ×2.8，卡上实测 ×4–7）。整幅压暗交付也行，别过 0.55：纸底 252 被
+  压到 140 以下时整张纸都成了墨。管线侧放宽交付口径的收益因此很小（现稿只剩 1–3%）。
+- **线描那张走"无损优先"**：它只当遮罩用（着色器只读它的 r 通道）且近乎二值，无损 WebP 常比
+  有损还小、且 mask 逐位相同——实测 002/003/005 无损最小（137/111/168K，q95 分别是
+  218/199/260K），001 则是有损 q85 更小（197K vs 无损 289K）。所以线描按"无损与 q85 取小"，
+  其余层仍按 q95（subject*/background 用 92）。
 - **卡背编号只用仓库内字体**：`brand/fonts/NotoSerif-SemiBold.ttf`（SIL OFL 1.1，许可证同目录
   `OFL.txt`）。`make_back.py` 用 `ROOT / '..' / '..' / 'brand' / 'fonts' / ...` 相对定位，
   五张卡（含已定稿的 001-003）都靠它，换机不漂。**不要**改回系统字体路径——

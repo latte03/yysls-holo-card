@@ -5,10 +5,10 @@
     "dx": 0,
     "dy": 0
   },
-  "ncc": 0.07149,
+  "ncc": 0.17753,
   "residual_px": {
-    "chosen": 14.42,
-    "identity": 14.42
+    "chosen": 2.83,
+    "identity": 2.83
   },
   "note": "residual is the median local displacement between the trace and the subject edges"
 }

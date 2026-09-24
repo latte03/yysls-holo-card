@@ -54,9 +54,6 @@
             <span class="loading-line"></span><span>正在装裱作品</span>
           </div>
         </div>
-        <div class="stage-note" aria-hidden="true">
-          <span>COLLECTION 01</span><span id="view-label">01 / FRONT</span>
-        </div>
         <div class="parameter-panel" id="parameter-panel">
           <div class="panel-heading">
             <span>景深与构图</span>
@@ -77,6 +74,107 @@
             ><span>底纹景深</span><output id="bg-depth-value"></output
             ><input id="bg-depth" type="range" min="-0.6" max="0.4" step="0.01"
           /></label>
+          <!-- 主体只有一张的卡（没声明 subjectLayers）用不到下面这排 tab 和三组滑杆，
+               app.js 会把它们继续留在 hidden；多层卡则反过来把上面的「画面景深」藏掉——
+               那一行管的就是中层，和「中层 · 景深」是同一根滑杆，不能同时出现两个。 -->
+          <div class="layer-tabs" role="tablist" aria-label="主体层" hidden>
+            <button
+              class="layer-tab"
+              type="button"
+              role="tab"
+              data-layer="back"
+              aria-selected="false"
+              disabled
+            >
+              后层 · 翅膀
+            </button>
+            <button
+              class="layer-tab"
+              type="button"
+              role="tab"
+              data-layer="mid"
+              aria-selected="true"
+              disabled
+            >
+              中层 · 人物
+            </button>
+            <button
+              class="layer-tab"
+              type="button"
+              role="tab"
+              data-layer="front"
+              aria-selected="false"
+              disabled
+            >
+              前层 · 鸟头与翅膀
+            </button>
+          </div>
+          <div class="layer-group" data-layer="back" role="tabpanel" hidden>
+            <label class="range-row" for="back-size"
+              ><span>大小</span><output id="back-size-value"></output
+              ><input id="back-size" type="range" min="0.85" max="1.15" step="0.01"
+                disabled
+            /></label>
+            <label class="range-row" for="back-x"
+              ><span>左右</span><output id="back-x-value"></output
+              ><input id="back-x" type="range" min="-0.08" max="0.08" step="0.002"
+                disabled
+            /></label>
+            <label class="range-row" for="back-y"
+              ><span>上下</span><output id="back-y-value"></output
+              ><input id="back-y" type="range" min="-0.08" max="0.08" step="0.002"
+                disabled
+            /></label>
+            <label class="range-row" for="back-depth"
+              ><span>景深</span><output id="back-depth-value"></output
+              ><input id="back-depth" type="range" min="-0.8" max="2" step="0.01"
+                disabled
+            /></label>
+          </div>
+          <div class="layer-group" data-layer="mid" role="tabpanel" hidden>
+            <label class="range-row" for="mid-size"
+              ><span>大小</span><output id="mid-size-value"></output
+              ><input id="mid-size" type="range" min="0.85" max="1.15" step="0.01"
+                disabled
+            /></label>
+            <label class="range-row" for="mid-x"
+              ><span>左右</span><output id="mid-x-value"></output
+              ><input id="mid-x" type="range" min="-0.08" max="0.08" step="0.002"
+                disabled
+            /></label>
+            <label class="range-row" for="mid-y"
+              ><span>上下</span><output id="mid-y-value"></output
+              ><input id="mid-y" type="range" min="-0.08" max="0.08" step="0.002"
+                disabled
+            /></label>
+            <label class="range-row" for="mid-depth"
+              ><span>景深</span><output id="mid-depth-value"></output
+              ><input id="mid-depth" type="range" min="-0.8" max="2" step="0.01"
+                disabled
+            /></label>
+          </div>
+          <div class="layer-group" data-layer="front" role="tabpanel" hidden>
+            <label class="range-row" for="front-size"
+              ><span>大小</span><output id="front-size-value"></output
+              ><input id="front-size" type="range" min="0.85" max="1.15" step="0.01"
+                disabled
+            /></label>
+            <label class="range-row" for="front-x"
+              ><span>左右</span><output id="front-x-value"></output
+              ><input id="front-x" type="range" min="-0.08" max="0.08" step="0.002"
+                disabled
+            /></label>
+            <label class="range-row" for="front-y"
+              ><span>上下</span><output id="front-y-value"></output
+              ><input id="front-y" type="range" min="-0.08" max="0.08" step="0.002"
+                disabled
+            /></label>
+            <label class="range-row" for="front-depth"
+              ><span>景深</span><output id="front-depth-value"></output
+              ><input id="front-depth" type="range" min="-0.8" max="2" step="0.01"
+                disabled
+            /></label>
+          </div>
         </div>
       </section>
       <section class="artwork-bar" aria-label="作品与材质">
@@ -92,17 +190,6 @@
           ><button id="back" aria-pressed="false" disabled>背面</button>
         </div>
         <div class="finish-cluster">
-          <button
-            id="depth-toggle"
-            class="depth-toggle"
-            type="button"
-            aria-controls="parameter-panel"
-            aria-expanded="true"
-            aria-label="显示或隐藏景深调整"
-            title="显示或隐藏景深调整"
-          >
-            <i data-lucide="sliders-horizontal"></i><span>景深调整</span>
-          </button>
           <div class="finish-control">
           <div class="finish-heading">
             <span>卡面质感</span>
@@ -155,6 +242,17 @@
             /><output id="foil-value">52%</output></label
           >
           </div>
+          <button
+            id="depth-toggle"
+            class="depth-toggle"
+            type="button"
+            aria-controls="parameter-panel"
+            aria-expanded="true"
+            aria-label="显示或隐藏景深调整"
+            title="显示或隐藏景深调整"
+          >
+            <i data-lucide="sliders-horizontal"></i><span>景深调整</span>
+          </button>
         </div>
       </section>
     </main>

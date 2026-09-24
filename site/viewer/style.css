@@ -314,16 +314,6 @@ button svg {
     aspect-ratio: 2 / 3;
   }
 }
-.stage-note {
-  position: absolute;
-  inset: auto var(--pad) 18px;
-  pointer-events: none;
-  display: flex;
-  justify-content: space-between;
-  font-size: 11px;
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
 .tools {
   position: absolute;
   left: 50%;
@@ -420,6 +410,41 @@ button svg {
   width: 100%;
   margin: 0;
 }
+/* 多层主体的每层参数：三组并列成 tab，一次只显示选中的那一组。 */
+.layer-tabs {
+  display: flex;
+  gap: 4px;
+  margin-top: 22px;
+  padding: 4px;
+  background: #eff0ed;
+  border-radius: 6px;
+}
+.layer-tab {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  border-radius: 3px;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+.layer-tab:hover {
+  color: var(--ink);
+}
+.layer-tab[aria-selected="true"] {
+  background: white;
+  color: var(--ink);
+  box-shadow:
+    inset 0 0 0 1px var(--gold-line),
+    0 2px 5px #21251c08;
+}
+.layer-group {
+  margin-top: 4px;
+}
+/* 组内四行是同一个对象的四个参数，行距比顶层那几行收紧。 */
+.layer-group .range-row {
+  margin-top: 12px;
+}
 .artwork-bar {
   margin: 34px var(--pad) 0;
   border-top: 1px solid var(--line);
@@ -478,8 +503,8 @@ button svg {
     inset 0 0 0 1px var(--gold-line),
     0 2px 5px #21251c08;
 }
-/* Right column of the artwork bar: the depth-panel switch sits directly beside the
-   finish control, so both read as one cluster. */
+/* Right column of the artwork bar. Inside the cluster the order is 卡面质感 / 光泽 /
+   景深调整——the panel switch comes last so it sits right above the panel it opens. */
 .finish-cluster {
   display: flex;
   align-items: center;
@@ -746,9 +771,6 @@ dialog dd {
     height: auto;
     min-height: 0;
   }
-  .stage-note {
-    inset: auto 0 18px;
-  }
   .artwork-bar {
     grid-column: 1;
     grid-row: 1;
@@ -822,15 +844,6 @@ dialog dd {
      a phone, so the canvas takes the whole first screen. */
   .stage {
     bottom: 0;
-  }
-  .stage-note {
-    display: none;
-  }
-  .stage-note > span:first-child {
-    display: none;
-  }
-  .stage-note > span:last-child {
-    margin-left: auto;
   }
   .tools {
     bottom: 0;

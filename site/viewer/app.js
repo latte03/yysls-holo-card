@@ -6,6 +6,9 @@ import "./style.css";
 import { ICON_TREES } from "./icons.data.js";
 import { cards } from "../cards.manifest.js";
 const icons = ICON_TREES;
+// 改查看器行为时顺手改这里：控制台会打印版本号 + 构建时间，用来区分本地/线上/缓存的是哪一版。
+const VIEWER_VERSION = "2026-09-24 多层主体 · 逐片元视线比 · 每层独立调参";
+const BUILT_AT = new Date(__BUILT_AT__).toLocaleString("zh-CN", { hour12: false });
 const $ = (id) => document.getElementById(id);
 const stage = $("stage");
 const media = matchMedia("(prefers-reduced-motion: reduce)");
@@ -53,13 +56,28 @@ void main() {
 const common = `
 precision highp float;
 varying vec2 vUv;
-uniform float uTime, uFoil, uScale, uDepth, uDepthBack, uDepthFront, uBgDepth, uFinish, uHasLine, uRelief, uSafeScale, uFxDepth, uHasFx;
-uniform vec2 uFit, uSafeOffset;
-uniform vec3 uView;
+uniform float uTime, uFoil, uScale, uDepth, uDepthBack, uDepthFront, uBgDepth, uFinish, uHasLine, uRelief, uSafeScale, uFxDepth, uHasFx, uDepthUnit, uFan, uLineGlow;
+uniform float uSizeBack, uSizeMid, uSizeFront;
+uniform vec2 uFit, uSafeOffset, uCardSize, uOffsetBack, uOffsetMid, uOffsetFront;
+uniform vec3 uView, uEye;
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1,311.7))) * 43758.5453); }
 float inside(vec2 p) { return step(0.,p.x)*step(0.,p.y)*step(p.x,1.)*step(p.y,1.); }
+// 视线比。uFan=0 时把相机当无穷远，全卡共用一个常数（原来的近似）；
+// uFan=1 时按片元位置与该层深度算真实视线方向，于是近层位移更大、而且在卡面上有梯度
+// （边缘比中心走得远）。这层梯度是透视有、正交没有的线索，也就是 holo-card-studio
+// lenticular 路线在顶点着色器里算 vView 拿到的东西。
+vec2 viewRatio(vec2 uv, float depth) {
+  vec3 V = uEye - vec3((uv - .5) * uCardSize, depth * uDepthUnit);
+  return mix(uView.xy / max(abs(uView.z), .4), V.xy / max(abs(V.z), .35), uFan);
+}
 vec2 parallax(vec2 uv, float depth) {
-  return uv + uView.xy / max(abs(uView.z), .4) * depth * .10;
+  return uv + viewRatio(uv, depth) * depth * .10;
+}
+// 三张主体层共用同一套缩放/安全区变换，再各自乘一个倍率、加一个位移——面板里每层的
+// 「大小 / 左右 / 上下」就是这两个量（uScale 是四张卡共有的整体比例，仍在最外层兜底）。
+// 位移加在最后，所以它是卡面 uv 单位、不受缩放影响：0.01 就是卡宽的 1%。
+vec2 fitUV(vec2 p, float size, vec2 offset) {
+  return ((p-.5)*uScale*size/uFit+.5)*uSafeScale+uSafeOffset+offset;
 }
 vec3 spectrum(float phase) {
   return .66 + .25 * cos(6.28318 * (phase + vec3(0., .33, .67)));
@@ -88,7 +106,10 @@ float v1noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(
 vec3 v1spectrum(float t){t=fract(t);vec3 pink=vec3(1.,.32,.62),yellow=vec3(1.,.85,.32),blue=vec3(.22,.62,1.);if(t<.35)return mix(pink,yellow,t/.35);if(t<.7)return mix(yellow,blue,(t-.35)/.35);return mix(blue,vec3(1.),(t-.7)/.3);}
 float v1wave(vec2 p){vec2 a=p+uView.xy*2.4;return .5+.5*sin((a.x*.848-a.y*.530)*6.283*.55+7.*v1noise(a*1.5));}
 vec3 v1foil(vec2 uv){return uFinish>2.5?film(uv):v1spectrum(v1wave(uv)*.8+v1noise(uv*5.)*.12);}
-float v1sweep(vec2 uv){return pow(max(0.,sin((uv.x*.83+uv.y*.35+uView.x*1.8+uView.y*.9)*6.283)),12.);}
+// 扫掠相位本身（还没加幂）。箔光和线辉光共用同一个相位，但各取各的幂：12 是"一道掠过"的锐利带
+// （半高宽只占周期 10.7%），6 的亮窗宽约 2.8 倍，描金线的存在感强得多。
+float v1phase(vec2 uv){return max(0.,sin((uv.x*.83+uv.y*.35+uView.x*1.8+uView.y*.9)*6.283));}
+float v1sweep(vec2 uv){return pow(v1phase(uv),12.);}
 float v1star(vec2 p){vec2 q=p*105.,id=floor(q),f=fract(q);float first=9.,second=9.;for(int y=-1;y<=1;y++){for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y));vec2 o=vec2(hash(id+g),hash(id+g+43.3));float d=length(g+o-f);if(d<first){second=first;first=d;}else second=min(second,d);}}float edge=1.-smoothstep(.01,.035,second-first);float sparse=step(.90,hash(id+8.8));float twinkle=pow(.5+.5*sin(uTime*1.8+hash(id)*30.+uView.x*27.+uView.y*21.),6.);return edge*sparse*twinkle;}
 `;
 const frontFragment =
@@ -97,7 +118,7 @@ const frontFragment =
 uniform sampler2D tSubject, tBackground, tText, tLine, tEffects, tSubjectBack, tSubjectFront;
 void main() {
   vec2 uv = vUv;
-  vec2 su = ((parallax(uv,uDepth)-.5)*uScale/uFit+.5)*uSafeScale+uSafeOffset;
+  vec2 su = fitUV(parallax(uv,uDepth),uSizeMid,uOffsetMid);
   vec2 bu = parallax(uv,uBgDepth);
   vec4 subject = texture2D(tSubject,clamp(su,0.,1.));
   subject.a *= inside(su)*(1.-uRelief);
@@ -105,16 +126,18 @@ void main() {
   vec3 foil = v1foil(uv);
   float amount = strength();
   float band = v1sweep(uv);
+  // 线辉光用更宽的那档亮窗（幂 6）：箔光那条带保持锐利原样，只有描金线变"常在"。
+  float glowBand = pow(v1phase(uv),6.);
   subject.rgb = mix(subject.rgb,overlay(subject.rgb,foil),amount*.16);
   bg = mix(bg,overlay(bg,foil),amount*.20);
   // 多层主体：后层先压到背景上，中层（tSubject，也是线辉光贴附的那层）之上再压前景层。
   // 每层有自己的视差深度，所以各取各的 UV；单层卡这两张是 1x1 全透明，合成退化回原样。
-  vec2 ru = parallax(uv,uDepthBack);
+  vec2 ru = fitUV(parallax(uv,uDepthBack),uSizeBack,uOffsetBack);
   vec4 rear = texture2D(tSubjectBack,clamp(ru,0.,1.));
   rear.a *= inside(ru)*(1.-uRelief);
   rear.rgb = mix(rear.rgb,overlay(rear.rgb,foil),amount*.16);
   vec3 col = mix(mix(bg,rear.rgb,rear.a),subject.rgb,subject.a);
-  vec2 fu = parallax(uv,uDepthFront);
+  vec2 fu = fitUV(parallax(uv,uDepthFront),uSizeFront,uOffsetFront);
   vec4 fore = texture2D(tSubjectFront,clamp(fu,0.,1.));
   fore.a *= inside(fu)*(1.-uRelief);
   fore.rgb = mix(fore.rgb,overlay(fore.rgb,foil),amount*.16);
@@ -129,8 +152,19 @@ void main() {
   // 星屑由整个主体轮廓遮挡，不只是中间那层——翅膀也要挡住它。
   float solid = 1.-(1.-subject.a)*(1.-rear.a)*(1.-fore.a);
   col += vec3(.66,.86,1.)*v1star(bu)*amount*.45*(1.-solid*.7);
-  float line = (1.-smoothstep(.06,.25,texture2D(tLine,clamp(su,0.,1.)).r))*uHasLine;
-  col += vec3(1.,.94,.78)*line*inside(su)*subject.a*band*amount*.35;
+  // 线辉光。窗口取的是「墨量」而不是「有多黑」：各卡的线描墨色差得很远（001 是黑墨，
+  // 002/006 是灰墨，003/005 的线本身就只有浅灰），原来 .06–.25 那套只认得出 001 的黑线，
+  // 于是线越粗反而越不亮。.30–.85 基本覆盖每张卡的全部墨迹；系数相应从 .35 减到 .18，
+  // 让 001 的总亮度维持原样（它的 mask 均值涨了 1.98 倍）。
+  float line = (1.-smoothstep(.30,.85,texture2D(tLine,clamp(su,0.,1.)).r))*uHasLine;
+  // 辉光色沿线铺开一圈光谱。相位取的是「沿带方向」的梯度（uv.y*.83-uv.x*.35），所以同一条亮线上
+  // 从暖到冷一路滑过去；再叠视线项，倾斜时整条线一起淌色。若直接用 band 自己的相位，整条线只会
+  // 同色整体变色，静态下看不出彩。系数 .18→.24 是补饱和色相比暖白暗的那三分之一；用 glowBand
+  // 而不是 band，是因为幂 12 的亮窗太窄，一条线只在很窄的掠带里亮一下，看着"没存在感"。
+  // uLineGlow 是每卡的倍率（parameters.lineartGlow，缺省 1）：辉光原本只能跟着「光泽」滑杆一起变，
+  // 有了它 003 这类细线的卡可以单独加强，不用把整卡的反光也推亮。
+  vec3 glow = v1spectrum(uView.x*1.1 + uView.y*.55 + uv.y*.83 - uv.x*.35);
+  col += glow*line*inside(su)*subject.a*glowBand*amount*.24*uLineGlow;
   vec4 text = texture2D(tText,uv);
   col = mix(col,text.rgb,text.a*(1.-uRelief));
   gl_FragColor = vec4(pow(clamp(col,0.,1.),vec3(2.2)),1.);
@@ -365,10 +399,15 @@ async function init() {
     : new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
   back.colorSpace = THREE.NoColorSpace;
   if (!hasBack) back.needsUpdate = true;
-  // 多层主体的后 / 前两层。单层卡不声明 subjectLayers，这里给 1x1 全透明，
+  // 多层主体的后 / 中 / 前层。单层卡不声明 subjectLayers，这里给 1x1 全透明，
   // 着色器里的合成就退化回原来那种单层结果。
   const layerBack = config.subjectLayers?.back;
+  // 中层可以只写 { depth, scale, offset } 而不给 src——素材本来就取 assets.subject，
+  // 这个条目只是用来放中层的调参，免得和别的层不对称。
+  const layerMid = config.subjectLayers?.mid;
   const layerFront = config.subjectLayers?.front;
+  const layerOffset = (layer) =>
+    new THREE.Vector2(layer?.offset?.[0] ?? 0, layer?.offset?.[1] ?? 0);
   const transparent = () => {
     const tex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1);
     tex.needsUpdate = true;
@@ -401,12 +440,22 @@ async function init() {
     tSubjectFront: { value: foreTex },
     uTime: { value: 0 },
     uView: { value: new THREE.Vector3(0, 0, 1) },
+    uEye: { value: new THREE.Vector3(0, 0, 20) },
+    uCardSize: { value: new THREE.Vector2(6.3, 9.45) },
+    uDepthUnit: { value: p.depthUnit ?? 1 },
+    uFan: { value: p.viewFan ?? 0 },
     uFit: { value: new THREE.Vector2(...fit) },
     uFoil: { value: p.foil ?? 0.52 },
     uScale: { value: p.subjectScale ?? 1 },
-    uDepth: { value: p.subjectDepth ?? 0.32 },
+    uDepth: { value: layerMid?.depth ?? p.subjectDepth ?? 0.32 },
     uDepthBack: { value: layerBack?.depth ?? 0 },
     uDepthFront: { value: layerFront?.depth ?? 0 },
+    uSizeBack: { value: layerBack?.scale ?? 1 },
+    uSizeMid: { value: layerMid?.scale ?? 1 },
+    uSizeFront: { value: layerFront?.scale ?? 1 },
+    uOffsetBack: { value: layerOffset(layerBack) },
+    uOffsetMid: { value: layerOffset(layerMid) },
+    uOffsetFront: { value: layerOffset(layerFront) },
     uBgDepth: { value: p.backgroundDepth ?? -0.18 },
     uSafeScale: { value: config.safeArea?.scale ?? 1 },
     // The shader's V axis is flipped relative to Blender's UV space, so the
@@ -421,6 +470,7 @@ async function init() {
     uHasFx: { value: hasFx ? 1 : 0 },
     uFinish: { value: 0 },
     uHasLine: { value: config.assets.lineart ? 1 : 0 },
+    uLineGlow: { value: p.lineartGlow ?? 1 },
     uRelief: { value: config.sourceMode === "relief" ? 1 : 0 },
   };
   const material = (fragment) =>
@@ -461,6 +511,9 @@ async function init() {
   });
   if (!faces) throw Error("卡片模型缺少正面材质");
   root.updateMatrixWorld(true);
+  // 逐片元视线比要知道片元在卡片局部空间的位置，所以量一下卡体尺寸（root 只有旋转，不含缩放）。
+  const cardBox = new THREE.Box3().setFromObject(gltf.scene).getSize(new THREE.Vector3());
+  uniforms.uCardSize.value.set(cardBox.x, cardBox.y);
   for (const meshes of Object.values(reliefLayers)) for (const mesh of meshes) {
     root.attach(mesh);
     mesh.userData.basePosition=mesh.position.clone();
@@ -489,6 +542,8 @@ async function init() {
   root.rotation.set(targetX, targetY, 0);
   window.__holo = {
     ready: true,
+    version: VIEWER_VERSION,
+    built: BUILT_AT,
     config,
     renderer,
     root,
@@ -500,6 +555,21 @@ async function init() {
     layers: reliefLayers,
     getState: () => ({ auto, flipped, finish, zoom }),
   };
+  console.info(
+    `[holo-card] ${VIEWER_VERSION} · 构建于 ${BUILT_AT} · 卡 ${id} · 主体 ${
+      1 + (layerBack ? 1 : 0) + (layerFront ? 1 : 0)
+    } 层 · viewFan ${p.viewFan ?? 0} · depthUnit ${p.depthUnit ?? 1}`,
+  );
+  if (layerBack || layerFront) {
+    // 多层卡再补一行每层参数：调完滑杆先看这里，确认页面上生效的是不是配置里那组值。
+    const brief = (name, layer) => {
+      const [ox = 0, oy = 0] = layer?.offset ?? [];
+      return `${name} d${(layer?.depth ?? 0).toFixed(2)} s${(layer?.scale ?? 1).toFixed(2)} o${ox.toFixed(3)},${oy.toFixed(3)}`;
+    };
+    console.info(
+      `[holo-card] 层参数 ${brief("后", layerBack)} ｜ ${brief("中", layerMid ?? { depth: p.subjectDepth })} ｜ ${brief("前", layerFront)}`,
+    );
+  }
   setFinish(config.appearance?.finish || "pearl");
   setAuto(!media.matches);
   // ?face=back opens straight onto the reverse: flip() also freezes the idle
@@ -575,10 +645,24 @@ function fallback3D(error) {
   let tx = -0.03, ty = -0.06, curX = 0, curY = 0, curFlip = 0, flipTarget = 0;
   let lastMove = 0, sway = !media.matches;
   let scale = 1, depthScale = 1, bgScale = 1;
+  // 每层调参在着色器里是采样坐标的变换，退到 CSS 就落成每层自己的 translate/scale。
+  // 「景深」没有等价量，用相对基准深度的倍率去缩放该层的 z，至少保住远近的相对关系。
+  // subject 与 lineart 共用同一个对象——着色器里 lineart 就是拿 su 采样的，必须跟着中层动。
+  const midTune = { size: 1, x: 0, y: 0, depth: 1 };
+  const layerTune = {
+    subject_back: { size: 1, x: 0, y: 0, depth: 1 },
+    subject: midTune,
+    lineart: midTune,
+    subject_front: { size: 1, x: 0, y: 0, depth: 1 },
+  };
   const applyLayers = () => {
     for (const [name, { el, z }] of layers) {
       const s = name === "background" ? bgScale : 1;
-      el.style.transform = `translateZ(${(z * depthScale * s).toFixed(2)}px)`;
+      const t = layerTune[name];
+      const tune = t
+        ? `translate(${(t.x * 100).toFixed(2)}%, ${(t.y * 100).toFixed(2)}%) scale(${t.size}) `
+        : "";
+      el.style.transform = `${tune}translateZ(${(z * depthScale * s * (t?.depth ?? 1)).toFixed(2)}px)`;
     }
   };
   applyLayers();
@@ -664,6 +748,38 @@ function fallback3D(error) {
     bgScale = Math.max(0.1, 1 + v * 4);
     applyLayers();
   });
+  // 多层卡的每层调参。这里不用 bindRange：位移要按百分比显示，景深要落成相对倍率。
+  if (showLayerPanelGroups()) {
+    const declared = config.subjectLayers || {};
+    const base = (key) => (key === "mid" ? (declared.mid?.depth ?? 0.55) : 0.1);
+    for (const [key, target, targetLayer] of [
+      ["back", "subject_back", declared.back],
+      ["mid", "subject", declared.mid],
+      ["front", "subject_front", declared.front],
+    ]) {
+      const t = layerTune[target];
+      const bind = (id, seed, write, asPercent) => {
+        const input = $(id);
+        input.disabled = false;
+        input.value = seed;
+        paintRange(id, asPercent);
+        input.addEventListener("input", () => {
+          write(Number(input.value));
+          paintRange(id, asPercent);
+          applyLayers();
+        });
+      };
+      const seedDepth = targetLayer?.depth ?? base(key);
+      bind(`${key}-size`, targetLayer?.scale ?? 1, (v) => (t.size = v));
+      bind(`${key}-x`, targetLayer?.offset?.[0] ?? 0, (v) => (t.x = v), true);
+      bind(`${key}-y`, targetLayer?.offset?.[1] ?? 0, (v) => (t.y = v), true);
+      // depth 除基准值得到倍率；基准为 0 时退回 1，免得除出 Infinity。
+      const seedMul = base(key) ? seedDepth / base(key) : 1;
+      bind(`${key}-depth`, seedMul, (v) => (t.depth = v));
+    }
+    setupLayerTabs();
+    applyLayers();
+  }
   document.querySelectorAll("[data-finish]").forEach((b) => {
     b.disabled = false;
     b.onclick = () => fallbackFinish(b.dataset.finish);
@@ -729,7 +845,6 @@ function setFinish(value) {
 function faceLabels() {
   $("front").setAttribute("aria-pressed", String(!flipped));
   $("back").setAttribute("aria-pressed", String(flipped));
-  $("view-label").textContent = flipped ? "02 / BACK" : "01 / FRONT";
 }
 function flip(value = !flipped) {
   flipped = value;
@@ -755,19 +870,99 @@ function layoutRelief() {
   place(reliefLayers.effects, RELIEF_STEP);
   place(reliefLayers.text, RELIEF_STEP * 2);
 }
-function updateInput(id, name) {
+// 把滑杆当前值刷到右侧读数与轨道填充上。位移类用百分比显示（0.02 uv = 卡宽 2%），其余两位小数。
+function paintRange(id, asPercent = false) {
   const input = $(id);
-  uniforms[name].value = Number(input.value);
-  if (config.sourceMode === "relief") layoutRelief();
-  $(id + "-value").value =
-    id === "foil"
-      ? Math.round(input.value * 100) + "%"
-      : Number(input.value).toFixed(2);
+  const v = Number(input.value);
+  $(id + "-value").value = asPercent ? (v * 100).toFixed(1) + "%" : v.toFixed(2);
   const span = Number(input.max) - Number(input.min);
   input.style.setProperty(
     "--fill",
-    (span ? ((input.value - input.min) / span) * 100 : 0).toFixed(1) + "%",
+    (span ? ((v - input.min) / span) * 100 : 0).toFixed(1) + "%",
   );
+}
+function updateInput(id, name) {
+  uniforms[name].value = Number($(id).value);
+  if (config.sourceMode === "relief") layoutRelief();
+  paintRange(id, id === "foil");
+}
+// 可用于调参的主体层：中层一定有（素材就是 assets.subject），后 / 前层只在声明了才在。
+// 单层卡返回空数组，整排 tab 和三组滑杆都藏起来。
+function availableLayers() {
+  const declared = config.subjectLayers || {};
+  if (!declared.back && !declared.front) return [];
+  return ["back", "mid", "front"].filter((key) => key === "mid" || declared[key]);
+}
+// 当前选中的 tab。默认中层；切到不存在的层（或该卡不是多层）时退回可用集合里的第一个。
+let layerTab = "mid";
+// 层参数组的显示：三组并列成 tab，一次只露一组。
+// 多层卡里还要把「画面景深」藏掉——那一行管的正是中层，和「中层 · 景深」是同一根滑杆。
+// WebGL 路径与 CSS-3D 降级路径共用。
+function showLayerPanelGroups(preferred) {
+  const available = availableLayers();
+  if (preferred && available.includes(preferred)) layerTab = preferred;
+  if (!available.includes(layerTab)) layerTab = available[0];
+  document.querySelectorAll(".layer-group").forEach((group) => {
+    group.hidden = group.dataset.layer !== layerTab;
+  });
+  document.querySelectorAll(".layer-tab").forEach((tab) => {
+    const on = tab.dataset.layer === layerTab;
+    tab.hidden = !available.includes(tab.dataset.layer);
+    tab.setAttribute("aria-selected", String(on));
+    tab.tabIndex = on ? 0 : -1;
+  });
+  const tabs = document.querySelector(".layer-tabs");
+  if (tabs) tabs.hidden = available.length === 0;
+  const depthRow = $("depth")?.closest(".range-row");
+  if (depthRow) depthRow.hidden = available.length > 0;
+  return available.length > 0;
+}
+function setupLayerTabs() {
+  document.querySelectorAll(".layer-tab").forEach((tab) => {
+    tab.disabled = false;
+    tab.addEventListener("click", () => showLayerPanelGroups(tab.dataset.layer));
+  });
+}
+// 多层主体的每层一组「大小 / 左右 / 上下 / 景深」。单层卡里这几组保持 hidden。
+const layerRows = [
+  ["back", "uSizeBack", "uOffsetBack", "uDepthBack"],
+  ["mid", "uSizeMid", "uOffsetMid", "uDepth"],
+  ["front", "uSizeFront", "uOffsetFront", "uDepthFront"],
+];
+function setupLayerControls() {
+  if (!showLayerPanelGroups()) return;
+  setupLayerTabs();
+  for (const [key, sizeName, offsetName, depthName] of layerRows) {
+    const bind = (id, write, asPercent = false) => {
+      const input = $(id);
+      if (!input) return;
+      input.disabled = false;
+      input.addEventListener("input", () => {
+        write(Number(input.value));
+        paintRange(id, asPercent);
+      });
+    };
+    bind(`${key}-size`, (v) => (uniforms[sizeName].value = v));
+    bind(`${key}-x`, (v) => (uniforms[offsetName].value.x = v), true);
+    bind(`${key}-y`, (v) => (uniforms[offsetName].value.y = v), true);
+    bind(`${key}-depth`, (v) => (uniforms[depthName].value = v));
+  }
+}
+// 把 uniform 现值倒灌回层滑杆。setup 与 reset 都走这里，保证「重置」能把层参数拉回配置值。
+// 只画当前露出的那组是不够的——切 tab 时要立刻有读数，所以可用的层全画。
+function syncLayerInputs() {
+  const available = availableLayers();
+  for (const [key, sizeName, offsetName, depthName] of layerRows) {
+    if (!available.includes(key)) continue;
+    const set = (id, v, asPercent = false) => {
+      $(id).value = v;
+      paintRange(id, asPercent);
+    };
+    set(`${key}-size`, uniforms[sizeName].value);
+    set(`${key}-x`, uniforms[offsetName].value.x, true);
+    set(`${key}-y`, uniforms[offsetName].value.y, true);
+    set(`${key}-depth`, uniforms[depthName].value);
+  }
 }
 function reset() {
   targetX = -0.035;
@@ -777,10 +972,11 @@ function reset() {
   setAuto(false);
   faceLabels();
   const p = config.parameters || {};
+  const layers = config.subjectLayers || {};
   const defaults = {
     foil: p.foil ?? 0.52,
     scale: p.subjectScale ?? 1,
-    depth: p.subjectDepth ?? 0.32,
+    depth: layers.mid?.depth ?? p.subjectDepth ?? 0.32,
     "fx-depth": p.effectsDepth ?? 0.14,
     "bg-depth": p.backgroundDepth ?? -0.18,
   };
@@ -788,6 +984,17 @@ function reset() {
     $(id).value = defaults[id];
     updateInput(id, name);
   });
+  uniforms.uDepthBack.value = layers.back?.depth ?? 0;
+  uniforms.uDepthFront.value = layers.front?.depth ?? 0;
+  for (const [key, sizeName, offsetName] of layerRows) {
+    const layer = layers[key];
+    uniforms[sizeName].value = layer?.scale ?? 1;
+    uniforms[offsetName].value.set(
+      layer?.offset?.[0] ?? 0,
+      layer?.offset?.[1] ?? 0,
+    );
+  }
+  syncLayerInputs();
   setFinish(config.appearance?.finish || "pearl");
   resize();
 }
@@ -811,6 +1018,8 @@ function setupControls() {
     updateInput(id, name);
     $(id).addEventListener("input", () => updateInput(id, name));
   });
+  setupLayerControls();
+  syncLayerInputs();
   stage.addEventListener("pointerdown", (e) => {
     if (e.button !== 0) return;
     dragging = true;
@@ -982,10 +1191,11 @@ function animate(now) {
   root.rotation.x += (targetX - root.rotation.x) * ease;
   root.rotation.y += (targetY - root.rotation.y) * ease;
   root.updateMatrixWorld(true);
-  uniforms.uView.value
+  // uEye 是相机在卡片局部空间的位置（含距离），逐片元视线比用它；uView 是它的方向，光泽/星屑用。
+  uniforms.uEye.value
     .copy(camera.position)
-    .applyMatrix4(inverse.copy(root.matrixWorld).invert())
-    .normalize();
+    .applyMatrix4(inverse.copy(root.matrixWorld).invert());
+  uniforms.uView.value.copy(uniforms.uEye.value).normalize();
   uniforms.uTime.value = media.matches && !auto ? 0 : elapsed;
   shadow.scale.x = 1 - Math.abs(Math.sin(root.rotation.y)) * 0.14;
   renderer.render(scene, camera);

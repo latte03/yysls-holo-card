@@ -44,6 +44,11 @@ metadata:
 **素材预处理好能大幅加速**（用户可先做）：四层都已是 1024×1536、主体是真透明 PNG、
 线稿已和主体对准、背景亮度已是最终值。这四项齐备时 prep 基本是直通。
 
+线稿另有一条口径：**辉光看"墨的面积"，不看"有多黑"**。管线只认 `L<140` 的墨，着色器窗口
+在 `L<76` 就满格，所以把线画得更黑（绕中灰拉对比）一点都不会更亮，要的是"实而匀的深墨"
+（003 重描版：墨区 4.1%→10.6%，辉光 ×2.8）。整体压暗交付稿也行，但别过 0.55——纸底 252–255
+被压到 140 以下时整张纸都会变成墨。
+
 ## 1. 建卡目录
 
 ```bash
@@ -195,12 +200,15 @@ export default {
     "lineart": "/assets/00X/lineart.webp",
     "back": "/assets/00X/back.webp"
   },
-  "parameters": {"subjectScale": 1.0, "subjectDepth": 0.55, "backgroundDepth": -0.45, "foil": 0.65},
-  // 多层主体才写这段：assets.subject 永远是中层（人物），线辉光也贴它；
-  // 后 / 前两层各自带视差深度，深度差越大分层越明显。
+  "parameters": {"subjectScale": 1.0, "backgroundDepth": -0.45, "foil": 0.65},
+  // 多层主体才写这段：assets.subject 永远是中层（人物），线辉光也贴它。
+  // 每层 depth 视差深度、scale 是「画面比例」之上的倍率、offset 是卡面 uv 位移
+  // （0.01 = 卡宽 1%）；卡片页面板的「大小 / 左右 / 上下 / 景深」就是这三项加深度。
+  // mid 只写调参、不给 src；中层的 depth 到位后 parameters.subjectDepth 就可以删掉。
   "subjectLayers": {
-    "back":  {"src": "/assets/00X/subject_back.webp",  "depth": 0.35},
-    "front": {"src": "/assets/00X/subject_front.webp", "depth": 0.75}
+    "back":  {"src": "/assets/00X/subject_back.webp",  "depth": -0.2, "scale": 1, "offset": [0, 0]},
+    "mid":   {"depth": 0.55, "scale": 1, "offset": [0, 0]},
+    "front": {"src": "/assets/00X/subject_front.webp", "depth": 1.6,  "scale": 1, "offset": [0, 0]}
   },
   "safeArea": {"scale": 1.0, "offset": [0, 0]},
   "appearance": {"background": "#f4f2ee", "finish": "pearl"}
@@ -211,13 +219,21 @@ export default {
 
 ```bash
 python3 -c "
-from PIL import Image; import pathlib
+from PIL import Image; import pathlib, io
 src=pathlib.Path('cards/00X-*/assets'); dst=pathlib.Path('site/public/assets/00X')
+def webp(im, **kw):
+    b=io.BytesIO(); im.save(b,'WEBP',method=6,**kw); return b.getvalue()
+def smallest(im):
+    # 线描只当遮罩用（着色器只读 r 通道）且近乎二值：无损常常比 q85 还小、mask 逐位相同。
+    # 实测 002/003/005 无损最小，001 有损 q85 更小，所以两个都编一遍取小的那个。
+    return min(webp(im, lossless=True), webp(im, quality=85), key=len)
 for n in ('subject','subject_back','subject_mid','subject_front','background','text','lineart','back'):
     p=src/f'{n}.png'
     if not p.exists(): continue     # 单层卡没有 subject_back/mid/front 那三张
-    Image.open(p).save(dst/f'{n}.webp','WEBP',
-        quality=92 if n.startswith('subject') or n=='background' else 95, method=6)"
+    im=Image.open(p)
+    data = smallest(im) if n=='lineart' else webp(im,
+        quality=92 if n.startswith('subject') or n=='background' else 95)
+    (dst/f'{n}.webp').write_bytes(data)"
 ```
 
 `cards.manifest.js` 加一条（**入口、首页链接、页头卡序全由它驱动，不用改 HTML**）：
