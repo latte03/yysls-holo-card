@@ -211,7 +211,7 @@ export default {
     "front": {"src": "/assets/00X/subject_front.webp", "depth": 1.6,  "scale": 1, "offset": [0, 0]}
   },
   "safeArea": {"scale": 1.0, "offset": [0, 0]},
-  "appearance": {"background": "#f4f2ee", "finish": "pearl"}
+  "appearance": {"finish": "pearl"}
 };
 ```
 

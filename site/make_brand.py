@@ -1,6 +1,7 @@
 """Brand assets for the 燕云十六声 series.
 
 logo-ink.png   header wordmark: brush mark keeps its gold, the type goes ink.
+logo-light.png  same, but the type goes paper — for the dark colour scheme.
 favicon.png    tab icon: the 卄 mark alone, square and transparent.
 
 The card-back plate is make_back.py's assets/back.png, shared by both routes.
@@ -11,19 +12,29 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent
 SRC = (ROOT.parent / 'brand' / 'logo+文字.webp').resolve()
-OUT = ROOT / 'assets'
+OUT = ROOT / 'public' / 'assets'
 MARK_X = 98  # column where the 卄 brush mark ends and the wordmark begins
 LOGO_W, LOGO_H = Image.open(SRC).size
 INK = (36, 38, 37)
+PAPER = (232, 230, 225)
+
+
+def wordmark(color, name):
+    """刷字标记保留原金色，只把右边的字刷成指定颜色。"""
+    im = Image.open(SRC).convert('RGBA')
+    a = np.asarray(im).copy()
+    a[:, MARK_X:, :3] = color
+    out = Image.fromarray(a, 'RGBA')
+    out.save(OUT / name)
+    print(name, out.size)
 
 
 def logo_ink():
-    im = Image.open(SRC).convert('RGBA')
-    a = np.asarray(im).copy()
-    a[:, MARK_X:, :3] = INK
-    out = Image.fromarray(a, 'RGBA')
-    out.save(OUT / 'logo-ink.png')
-    print('logo-ink.png', out.size)
+    wordmark(INK, 'logo-ink.png')
+
+
+def logo_light():
+    wordmark(PAPER, 'logo-light.png')
 
 
 def favicon():
@@ -41,4 +52,5 @@ def favicon():
 if __name__ == '__main__':
     OUT.mkdir(exist_ok=True)
     logo_ink()
+    logo_light()
     favicon()

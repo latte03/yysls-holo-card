@@ -14,7 +14,8 @@ holo-card/
 │                                       （自包含，不依赖 ~/.agents/skills/）
 ├─ brand/                  共享品牌源（唯一 logo 出处）
 │   ├─ logo+文字.webp       燕云十六声 lockup，页头/卡背/favicon 都从它派生
-│   ├─ fonts/              仓库内字体（SIL OFL）：卡背编号用 NotoSerif-SemiBold.ttf
+│   ├─ fonts/              仓库内字体：卡背编号用 NotoSerif-SemiBold.ttf（SIL OFL）；
+│   │                       FZJinLS-B-GB.ttf 是整站正文的方正金隶原库（商用授权另议）
 │   └─ 浅色-logo.png        深底用版本（当前未使用）
 │
 ├─ tools/card_pipeline/    建卡管线脚本只此一份，靠 --card 定位卡目录
@@ -41,13 +42,15 @@ holo-card/
     ├─ cards.manifest.js   卡注册表——唯一声明一张卡的地方
     ├─ card.template.html  卡壳模板（唯一源）
     ├─ gen-card-pages.mjs  按清单把模板扇成 site/<id>/index.html（产物，不入库）
-    ├─ viewer/             共享查看器 app.js / style.css / icons.data.js
+    ├─ viewer/             共享查看器 app.js / style.css / theme.js（深浅色）/ icons.js + icons.data.js
     │                       └─ landing.js + landing.css（首页）
     ├─ 001/ 002/ ...       每张卡：card.config.js（查看器读这份，入库）
     │                       └─ index.html 由 gen-card-pages.mjs 生成，已 gitignore
     ├─ public/assets/      原样拷贝的素材：各卡图层与 glb、logo-ink、favicon
+    ├─ public/fonts/       fzjinls.woff2 —— 方正金隶子集，改了文案要重裁
     ├─ dist/               vite build 产物，自包含，即发布物
-    └─ make_brand.py       从 brand/ 生成站点品牌资源
+    ├─ make_brand.py       从 brand/ 生成站点品牌资源
+    └─ make_font.py        从 brand/fonts/FZJinLS-B-GB.ttf 裁出上面那个字体子集
 ```
 
 ## 启动与发布
@@ -71,6 +74,14 @@ pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在
 | `/003/index.html` | 第三弹 · 听云屿 |
 
 单卡追加 `?face=back` 直接看背面。
+
+深浅色默认跟随系统，页头那个按钮（首页在右上角）可以显式切换，选择记在 localStorage 的
+`holo-theme`，右键它回到"跟随系统"。配色只有一份：CSS 里每个颜色 token 都写成
+`light-dark(浅, 深)`，生效哪一套由 `<html>` 的 `color-scheme` 决定，所以加颜色时**不要**
+再写 `@media (prefers-color-scheme: dark)`。两个坑：① Vite 在 `build.target` 为 esnext 时
+把 CSS 目标定成 chrome61，lightningcss 会把 `light-dark()` 降级回媒体查询、手动切换当场失灵，
+`vite.config.js` 里的 `build.cssTarget` 就是为此；② 图片选不了 `light-dark()`，字标两张 PNG
+由 `<html data-paper>` 翻（`viewer/theme.js` 写）。
 
 站点已上线：`yanyun-cards-p4207ri6kdw.qoder.zone`。发布流程见技能文档第 7 节。
 

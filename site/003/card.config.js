@@ -50,7 +50,6 @@ export default {
     ]
   },
   "appearance": {
-    "background": "#f4f2ee",
     "finish": "pearl"
   }
 };

@@ -3,11 +3,12 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import "./style.css";
 // Icons are inline data trees (icons.data.js) — zero sub-imports at runtime,
 // so no ad/privacy blocker can kill the page by blocking an icon module.
-import { ICON_TREES } from "./icons.data.js";
+import { refreshIcons } from "./icons.js";
+import { cssColor, mountThemeToggle, onChange } from "./theme.js";
 import { cards } from "../cards.manifest.js";
-const icons = ICON_TREES;
+import { finishes, finishOf, defaultFinish } from "../finishes.js";
 // 改查看器行为时顺手改这里：控制台会打印版本号 + 构建时间，用来区分本地/线上/缓存的是哪一版。
-const VIEWER_VERSION = "2026-09-24 多层主体 · 逐片元视线比 · 每层独立调参";
+const VIEWER_VERSION = "2026-09-25 深浅色手动开关 · 字号上调一档 · 跨页 View Transitions";
 const BUILT_AT = new Date(__BUILT_AT__).toLocaleString("zh-CN", { hour12: false });
 const $ = (id) => document.getElementById(id);
 const stage = $("stage");
@@ -27,13 +28,14 @@ let renderer,
   root,
   uniforms,
   config,
-  shadow,
+  ground,
+  drop,
   lastTime = 0,
   elapsed = 0;
 let auto = false,
   flipped = false,
   dragging = false,
-  finish = "pearl",
+  finish = defaultFinish,
   zoom = 1;
 let targetX = -0.035,
   targetY = -0.15,
@@ -41,6 +43,8 @@ let targetX = -0.035,
   noticeTimer;
 const settings = [
   ["foil", "uFoil"],
+  ["foil-sat", "uFoilSat"],
+  ["sweep-soft", "uSweepSoft"],
   ["scale", "uScale"],
   ["depth", "uDepth"],
   ["fx-depth", "uFxDepth"],
@@ -56,7 +60,7 @@ void main() {
 const common = `
 precision highp float;
 varying vec2 vUv;
-uniform float uTime, uFoil, uScale, uDepth, uDepthBack, uDepthFront, uBgDepth, uFinish, uHasLine, uRelief, uSafeScale, uFxDepth, uHasFx, uDepthUnit, uFan, uLineGlow;
+uniform float uTime, uFoil, uScale, uDepth, uDepthBack, uDepthFront, uBgDepth, uFinish, uHasLine, uRelief, uSafeScale, uFxDepth, uHasFx, uDepthUnit, uFan, uLineGlow, uFoilSat, uSweepSoft, uHasBand, uHasStar;
 uniform float uSizeBack, uSizeMid, uSizeFront;
 uniform vec2 uFit, uSafeOffset, uCardSize, uOffsetBack, uOffsetMid, uOffsetFront;
 uniform vec3 uView, uEye;
@@ -103,14 +107,30 @@ float sweep(vec2 uv) {
 // ---- v1 (holo-card-studio) foil stack, ported verbatim so both routes share one holo look ----
 vec3 overlay(vec3 b,vec3 f){return mix(2.*b*f,1.-2.*(1.-b)*(1.-f),step(vec3(.5),b));}
 float v1noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}
-vec3 v1spectrum(float t){t=fract(t);vec3 pink=vec3(1.,.32,.62),yellow=vec3(1.,.85,.32),blue=vec3(.22,.62,1.);if(t<.35)return mix(pink,yellow,t/.35);if(t<.7)return mix(yellow,blue,(t-.35)/.35);return mix(blue,vec3(1.),(t-.7)/.3);}
+// 尾段原来是 mix(blue, vec3(1.))：整整 30% 的相位行程在往纯白走，这就是卡面上那层
+// "除了彩虹还有一团白光"的一个直接来源。改成蓝→粉闭环，一个周期里始终有彩。
+vec3 v1spectrum(float t){t=fract(t);vec3 pink=vec3(1.,.32,.62),yellow=vec3(1.,.85,.32),blue=vec3(.22,.62,1.);if(t<.35)return mix(pink,yellow,t/.35);if(t<.7)return mix(yellow,blue,(t-.35)/.35);return mix(blue,pink,(t-.7)/.3);}
+// 彩膜贴膜：保留底图亮度，把膜色的彩度贴上去。原来的 overlay 在亮部走的是
+// 1-2(1-b)(1-f)，白衣服那里 b≈.9，结果≈.8+.2f——膜是什么颜色都几乎还是白，于是
+// 彩虹只落在暗部、亮部只剩白雾（实测：光泽从 0 拉到 .65，全卡平均彩度不升反降）。
+vec3 laminate(vec3 base, vec3 film, float k) {
+  float lb = dot(base, vec3(.2126,.7152,.0722));
+  float lf = max(dot(film, vec3(.2126,.7152,.0722)), .001);
+  return mix(base, film * (lb / lf), k);
+}
+// 鲜艳度：绕自身亮度拉伸彩度，1 为原样。给滑杆当把手用。
+vec3 vivid(vec3 c, float k) { return mix(vec3(dot(c, vec3(.2126,.7152,.0722))), c, k); }
 float v1wave(vec2 p){vec2 a=p+uView.xy*2.4;return .5+.5*sin((a.x*.848-a.y*.530)*6.283*.55+7.*v1noise(a*1.5));}
 vec3 v1foil(vec2 uv){return uFinish>2.5?film(uv):v1spectrum(v1wave(uv)*.8+v1noise(uv*5.)*.12);}
 // 扫掠相位本身（还没加幂）。箔光和线辉光共用同一个相位，但各取各的幂：12 是"一道掠过"的锐利带
 // （半高宽只占周期 10.7%），6 的亮窗宽约 2.8 倍，描金线的存在感强得多。
 float v1phase(vec2 uv){return max(0.,sin((uv.x*.83+uv.y*.35+uView.x*1.8+uView.y*.9)*6.283));}
-float v1sweep(vec2 uv){return pow(v1phase(uv),12.);}
-float v1star(vec2 p){vec2 q=p*105.,id=floor(q),f=fract(q);float first=9.,second=9.;for(int y=-1;y<=1;y++){for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y));vec2 o=vec2(hash(id+g),hash(id+g+43.3));float d=length(g+o-f);if(d<first){second=first;first=d;}else second=min(second,d);}}float edge=1.-smoothstep(.01,.035,second-first);float sparse=step(.90,hash(id+8.8));float twinkle=pow(.5+.5*sin(uTime*1.8+hash(id)*30.+uView.x*27.+uView.y*21.),6.);return edge*sparse*twinkle;}
+float v1sweep(vec2 uv){return pow(v1phase(uv),uSweepSoft);}
+// 星屑。原来取的是 second-first，也就是"到最近两颗星的距离之差"——那条等值线画的是 Voronoi
+// 胞界（蛛网状细线），不是星点，而一格只有约 3 像素，细线宽 .035 格，等于什么都看不见。
+// 改成按"到最近一颗星的距离"取亮窗：真正的圆点星屑，半径约 .4 格，密度 5%，闪烁幂 4（幂 6 时
+// 同一瞬间只有两三颗星是亮的，看着像没有）。
+float v1star(vec2 p){vec2 q=p*105.,id=floor(q),f=fract(q);float d=9.;vec2 wi=id;for(int y=-1;y<=1;y++){for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y));vec2 o=vec2(hash(id+g),hash(id+g+43.3));float dd=length(g+o-f);if(dd<d){d=dd;wi=id+g;}}}float edge=1.-smoothstep(.03,.42,d);float sparse=step(.95,hash(wi+8.8));float twinkle=pow(.5+.5*sin(uTime*1.8+hash(wi)*30.+uView.x*27.+uView.y*21.),4.);return edge*sparse*twinkle;}
 `;
 const frontFragment =
   common +
@@ -123,24 +143,26 @@ void main() {
   vec4 subject = texture2D(tSubject,clamp(su,0.,1.));
   subject.a *= inside(su)*(1.-uRelief);
   vec3 bg = texture2D(tBackground,clamp(bu,0.,1.)).rgb;
-  vec3 foil = v1foil(uv);
+  vec3 foil = vivid(v1foil(uv), uFoilSat);
   float amount = strength();
   float band = v1sweep(uv);
   // 线辉光用更宽的那档亮窗（幂 6）：箔光那条带保持锐利原样，只有描金线变"常在"。
   float glowBand = pow(v1phase(uv),6.);
-  subject.rgb = mix(subject.rgb,overlay(subject.rgb,foil),amount*.16);
-  bg = mix(bg,overlay(bg,foil),amount*.20);
+  // 权重看着和原来的 .16/.20 差不多，但含义变了：overlay 在亮部几乎不改变颜色，
+  // 所以那组数实际上只在暗部起作用；laminate 是全亮度范围都在贴彩膜。
+  subject.rgb = laminate(subject.rgb,foil,amount*.18);
+  bg = laminate(bg,foil,amount*.22);
   // 多层主体：后层先压到背景上，中层（tSubject，也是线辉光贴附的那层）之上再压前景层。
   // 每层有自己的视差深度，所以各取各的 UV；单层卡这两张是 1x1 全透明，合成退化回原样。
   vec2 ru = fitUV(parallax(uv,uDepthBack),uSizeBack,uOffsetBack);
   vec4 rear = texture2D(tSubjectBack,clamp(ru,0.,1.));
   rear.a *= inside(ru)*(1.-uRelief);
-  rear.rgb = mix(rear.rgb,overlay(rear.rgb,foil),amount*.16);
+  rear.rgb = laminate(rear.rgb,foil,amount*.18);
   vec3 col = mix(mix(bg,rear.rgb,rear.a),subject.rgb,subject.a);
   vec2 fu = fitUV(parallax(uv,uDepthFront),uSizeFront,uOffsetFront);
   vec4 fore = texture2D(tSubjectFront,clamp(fu,0.,1.));
   fore.a *= inside(fu)*(1.-uRelief);
-  fore.rgb = mix(fore.rgb,overlay(fore.rgb,foil),amount*.16);
+  fore.rgb = laminate(fore.rgb,foil,amount*.18);
   col = mix(col,fore.rgb,fore.a);
   if (uFinish > 2.5) col = col * vec3(1.02, .95, .78) + vec3(.05, .012, 0.0);
   // Effects layer floats between the subject and the text: above the character,
@@ -148,10 +170,15 @@ void main() {
   vec2 eu = parallax(uv,uFxDepth);
   vec4 fx = texture2D(tEffects,clamp(eu,0.,1.));
   col = mix(col,fx.rgb,fx.a*(1.-uRelief)*uHasFx);
-  col += foil*band*amount*.16;
+  // 亮带原来是纯加色（col += foil*band*…）：整条带宽而泛白，边界读成一条过曝白边。
+  // 换成保亮度的贴膜后又太含蓄——只改色不改进，扫光几乎看不出来。现在是两档叠加：
+  // 宽的那档仍然只上色，band² 才提亮。幂 7 平方后等于幂 14，加色被压进最亮的那一条
+  // （约占周期 5%），所以读的是一道亮芯而不是一片泛白。
+  col = laminate(col,foil,band*amount*.34*uHasBand);
+  col += foil*band*band*amount*.3*uHasBand;
   // 星屑由整个主体轮廓遮挡，不只是中间那层——翅膀也要挡住它。
   float solid = 1.-(1.-subject.a)*(1.-rear.a)*(1.-fore.a);
-  col += vec3(.66,.86,1.)*v1star(bu)*amount*.45*(1.-solid*.7);
+  col += vec3(.66,.86,1.)*v1star(bu)*amount*.8*(1.-solid*.7)*uHasStar;
   // 线辉光。窗口取的是「墨量」而不是「有多黑」：各卡的线描墨色差得很远（001 是黑墨，
   // 002/006 是灰墨，003/005 的线本身就只有浅灰），原来 .06–.25 那套只认得出 001 的黑线，
   // 于是线越粗反而越不亮。.30–.85 基本覆盖每张卡的全部墨迹；系数相应从 .35 减到 .18，
@@ -189,7 +216,12 @@ void main() {
   vec2 p=vUv-.5;
   float filigree=.5+.5*sin(length(p*vec2(1.,1.5))*100.+v1noise(p*15.)*4.);
   vec3 col=mix(vec3(.025,.042,.064),vec3(.085,.092,.11),filigree*.35);
-  float border=step(.482,max(abs(p.x),abs(p.y)));
+  // 压边带。原来是 step(.482,max(abs(p.x),abs(p.y)))——uv 是正方形而卡是 2:3，所以这条带
+  // 上下比左右厚 1.5 倍，四角还被卡的圆角切成斜块。改成按卡的真实尺寸校正过的圆角矩形距离
+  // 场：四条边等宽，转角跟着半径 .2（与网格圆角同一个值）圆过去。
+  vec2 rq=abs(p*uCardSize)-(uCardSize*.5-.09)+.2;
+  float rd=min(max(rq.x,rq.y),0.)+length(max(rq,0.))-.2;
+  float border=1.-smoothstep(.075,.115,abs(rd));
   col=mix(col,v1spectrum(v1wave(vUv))*.5,border);
   col+=v1spectrum(v1wave(vUv))*strength()*.08;
   col=mix(col,art.rgb,art.a);
@@ -233,40 +265,84 @@ void main(){vec4 art=texture2D(tText,vUv);if(art.a<.02)discard;gl_FragColor=vec4
 }
 `;
 
-function canvasTexture(canvas) {
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.NoColorSpace;
-  return texture;
+// 两张影子网格共用：顶点段、影子颜色 uniform，以及"抖一下 alpha 再输出"的尾段。
+const shadowVertex = `
+varying vec2 vUv;
+void main() {
+  vUv = uv;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1. );
+}`;
+// 影子的颜色来自 CSS 的 --stage-shadow（注册成 <color>，所以读回来是解好的 rgb()）。
+// 走 uniform 而不是拼进着色器源码：切深浅色时只改一个数，不用重建材质。
+const uShadowColor = { value: new THREE.Color(0.11, 0.14, 0.1) };
+const shadowFragmentHead = `
+uniform vec3 uShadowColor;
+varying vec2 vUv;
+`;
+const shadowTail = `
+  // 屏幕空间抖动：峰值 alpha 只有几十级，摊在浅色纸面上会印出一圈圈等值线。
+  a += ( fract( sin( dot( mod( gl_FragCoord.xy, 1024. ), vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ) - .5 ) * 3. / 255.;
+  gl_FragColor = vec4( uShadowColor, max( a, 0. ) );
+  #include <colorspace_fragment>
+}`;
+function readShadowColor() {
+  const parts = cssColor("--stage-shadow").match(/[\d.]+/g) || [];
+  // 直接除以 255、不做 sRGB 反解，和这段之前把 "29, 35, 25" 塞进源码时一模一样。
+  return parts.slice(0, 3).map((n) => (Number(n) || 0) / 255);
 }
-function addShadow() {
-  const c = document.createElement("canvas");
-  c.width = 256;
-  c.height = 256;
-  const ctx = c.getContext("2d");
-  const grad = ctx.createRadialGradient(128, 128, 6, 128, 128, 128);
-  grad.addColorStop(0, "rgba(29,35,25,0.13)");
-  grad.addColorStop(0.4, "rgba(29,35,25,0.055)");
-  grad.addColorStop(1, "rgba(29,35,25,0)");
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, 256, 256);
-  shadow = new THREE.Mesh(
-    new THREE.PlaneGeometry(8.8, 11.8),
-    new THREE.MeshBasicMaterial({
-      map: canvasTexture(c),
+// 舞台上"不在 CSS 里"的两处颜色：画布底色和影子。CSS 换方案时这里跟着重取一次。
+function paintStagePalette() {
+  const [r, g, b] = readShadowColor();
+  uShadowColor.value.setRGB(r, g, b);
+  if (renderer)
+    renderer.setClearColor(
+      cssColor("--paper") || "#ffffff",
+      1,
+    );
+}
+// 落地影：贴着卡片底边的一条扁椭圆接触影，比卡片宽一点、只有它高的一成。
+function addGroundShadow(cardHeight) {
+  ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(7.6, 1.6),
+    new THREE.ShaderMaterial({
+      uniforms: { uShadowColor },
       transparent: true,
       depthWrite: false,
+      vertexShader: shadowVertex,
+      fragmentShader: `${shadowFragmentHead}
+void main() {
+  vec2 d = ( vUv - .5 ) * vec2( 2.0, 2.6 );
+  float a = .2 * pow( max( 1. - length( d ), 0. ), 1.6 );${shadowTail}`,
     }),
   );
-  shadow.position.set(0.28, -0.48, -0.5);
-  scene.add(shadow);
+  ground.position.set(0.25, -cardHeight / 2 - 0.02, -0.55);
+  scene.add(ground);
 }
-// Render a lucide node tree (["svg", attrs, [children]]) into an svg element.
-function renderIconNode(node) {
-  const [tag, attrs = {}, children = []] = node;
-  const el = document.createElementNS("http://www.w3.org/2000/svg", tag);
-  for (const [key, value] of Object.entries(attrs)) el.setAttribute(key, value);
-  for (const child of children) el.appendChild(renderIconNode(child));
-  return el;
+// 卡片投在背景上的影，相当于 box-shadow：跟着卡片一起转的圆角矩形软影，往右下偏一点。
+// 关键是形状贴着卡的轮廓——上一版用圆形，圆在矩形卡上必然角上露得多、边上露得少，
+// 于是既读成"投影跑到卡片里面"，又自带一圈圈等值线。
+function addDropShadow(cardWidth, cardHeight) {
+  const margin = 1.45;
+  drop = new THREE.Mesh(
+    new THREE.PlaneGeometry(cardWidth * margin, cardHeight * margin),
+    new THREE.ShaderMaterial({
+      uniforms: { uShadowColor },
+      transparent: true,
+      depthWrite: false,
+      vertexShader: shadowVertex,
+      fragmentShader: `${shadowFragmentHead}
+float rrect( vec2 p, vec2 b, float r ) {
+  vec2 q = abs( p ) - b + r;
+  return min( max( q.x, q.y ), 0. ) + length( max( q, 0. ) ) - r;
+}
+void main() {
+  // 平面比卡大 margin 倍，所以卡的半轮廓就落在 .69 处；偏移量取右下，约半个 blur 半径。
+  float a = 1. - smoothstep( -.04, .2, rrect( ( vUv - .5 ) * 2. - vec2( .03, -.045 ), vec2( .69 ), .08 ) );
+  a *= .16;${shadowTail}`,
+    }),
+  );
+  drop.position.set(0, 0, -0.55);
+  root.add(drop);
 }
 // The header switch is shared by every card shell, so the whole label is
 // rendered here from the registry instead of being hand-written per page.
@@ -296,21 +372,38 @@ function renderCardNav() {
   // Seed the edition so it is correct before the async config lands.
   $("edition").textContent = current.edition;
 }
-function refreshIcons() {
-  const overrides = { "stroke-width": 1.5 };
-  // icons.data.js is keyed in PascalCase (Play, RotateCcw, SlidersHorizontal …) while
-  // the markup uses lucide's hyphenated names (play, rotate-ccw, sliders-horizontal).
-  // Looking the raw attribute up never matched, so no icon ever rendered.
-  const pascal = (name) =>
-    name.split("-").map((part) => part.charAt(0).toUpperCase() + part.slice(1)).join("");
-  document.querySelectorAll("[data-lucide]").forEach((el) => {
-    const name = el.getAttribute("data-lucide");
-    const tree = icons[name] || icons[pascal(name)];
-    if (!tree) return;
-    const [tag, defaults = {}, children = []] = tree;
-    const svg = renderIconNode([tag, { ...defaults, ...overrides }, children]);
-    el.replaceChildren(svg);
-  });
+// 工艺色板整排由注册表渲染，模板里只留一个空容器：加一种工艺不用碰 HTML。
+// applyFinish 由实际生效的那条渲染路径注入（WebGL 的 setFinish / 回退的 fallbackFinish），
+// 于是点击接线只有一处，两条路径各自只负责"怎么把工艺落到画面上"。
+let applyFinish = null;
+function renderFinishSwatches() {
+  const row = document.querySelector(".swatches");
+  if (!row) return;
+  row.replaceChildren(
+    ...finishes.map((f) => {
+      const b = document.createElement("button");
+      b.className = "swatch " + f.id;
+      b.dataset.finish = f.id;
+      b.setAttribute("aria-pressed", String(f.id === finish));
+      b.setAttribute("aria-label", f.label);
+      b.title = f.label;
+      // 与模板里原来的写法一致：卡片就绪后由统一的 enable 步骤打开。
+      b.disabled = true;
+      b.onclick = () => applyFinish?.(f.id);
+      return b;
+    }),
+  );
+}
+function paintFinishUI(id) {
+  const f = finishOf(id);
+  document
+    .querySelectorAll("[data-finish]")
+    .forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.finish === f.id)),
+    );
+  $("finish-name").textContent = f.label;
+  $("foil").disabled = !!f.noFoil;
+  return f;
 }
 function notice(message) {
   clearTimeout(noticeTimer);
@@ -320,7 +413,12 @@ function notice(message) {
 }
 async function init() {
   refreshIcons();
+  // 深浅色开关要在建 WebGL 上下文之前就接上：回退到 CSS-3D 的那条路会直接 return，
+  // 挂在后面就没了。画布底色和影子色不在 CSS 里，所以切换时回调 paintStagePalette。
+  mountThemeToggle($("theme"));
+  onChange(paintStagePalette);
   renderCardNav();
+  renderFinishSwatches();
   // One config module per card, resolved from the route. Vite globs them so
   // each page only pulls its own, and a new card needs no change here.
   const id = location.pathname.split("/").filter(Boolean)[0] || cards[0].id;
@@ -341,7 +439,7 @@ async function init() {
   $("about-title").textContent = [config.subtitle, config.title]
     .filter(Boolean)
     .join(" / ");
-  await document.fonts.load("500 42px Atelier");
+  await document.fonts.load("500 46px FZJinLi");
   try {
     renderer = new THREE.WebGLRenderer({
       antialias: true,
@@ -367,7 +465,8 @@ async function init() {
       return;
     }
   }
-  renderer.setClearColor(config.appearance?.background || "#fafafa", 1);
+  // 舞台底色跟着 CSS 的 --paper：画布和页面本来就是同一张"纸"，两处各写一个色号必然对不齐。
+  paintStagePalette();
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
@@ -446,6 +545,13 @@ async function init() {
     uFan: { value: p.viewFan ?? 0 },
     uFit: { value: new THREE.Vector2(...fit) },
     uFoil: { value: p.foil ?? 0.52 },
+    // 鲜艳度：膜的彩度绕自身亮度拉伸的倍率。1 是原来的味道，>1 更艳。
+    uFoilSat: { value: p.foilSat ?? 1.35 },
+    // 扫光柔和度：亮带的 pow 指数，越大越窄越硬。12 是原来写死的值。
+    uSweepSoft: { value: p.sweepSoft ?? 7 },
+    // 下面两个只为 ?debug=fx 的二分开关存在，正常渲染恒为 1。
+    uHasBand: { value: 1 },
+    uHasStar: { value: 1 },
     uScale: { value: p.subjectScale ?? 1 },
     uDepth: { value: layerMid?.depth ?? p.subjectDepth ?? 0.32 },
     uDepthBack: { value: layerBack?.depth ?? 0 },
@@ -484,7 +590,6 @@ async function init() {
     web_front: material(frontFragment),
     web_back: material(backFragment),
     web_edge: material(edgeFragment),
-    web_gold: new THREE.MeshBasicMaterial({ color: "#c9a24a" }),
   };
   for (const [role,fragment] of [["web_subject",subjectFragment],["web_effects",effectsFragment],["web_text",textFragment]]) {
     materials[role] = material(fragment);
@@ -500,6 +605,12 @@ async function init() {
     if (!ob.isMesh) return;
     const role = ob.material?.name;
     if (role === "web_text" && config.sourceMode !== "relief") {
+      ob.visible = false;
+      return;
+    }
+    // 内圈那道古金细边不要了（卡面自己就有描金线，再套一圈固定的金框会糊）。外圈的全息
+    // 压边留着——它是卡片厚度之外唯一那条"彩色压边"，去掉之后卡的轮廓会显得生硬。
+    if (/^内圈/.test(ob.name)) {
       ob.visible = false;
       return;
     }
@@ -520,7 +631,8 @@ async function init() {
     mesh.userData.baseScale=mesh.scale.clone();
   }
   if (config.sourceMode === "relief" && !reliefLayers.subject.length) throw Error("缺少独立人物层，请重新生成模型");
-  addShadow();
+  addGroundShadow(cardBox.y);
+  addDropShadow(cardBox.x, cardBox.y);
   setupControls();
   document
     .querySelectorAll("button[disabled],input[disabled]")
@@ -570,11 +682,12 @@ async function init() {
       `[holo-card] 层参数 ${brief("后", layerBack)} ｜ ${brief("中", layerMid ?? { depth: p.subjectDepth })} ｜ ${brief("前", layerFront)}`,
     );
   }
-  setFinish(config.appearance?.finish || "pearl");
+  setFinish(config.appearance?.finish || defaultFinish);
   setAuto(!media.matches);
   // ?face=back opens straight onto the reverse: flip() also freezes the idle
   // sway, so the back plate reads flat instead of mid-rotation.
   if (new URLSearchParams(location.search).get("face") === "back") flip(true);
+  setupFxDebug();
   renderer.setAnimationLoop(animate);
 }
 // Layered 3D card built with CSS 3D transforms — used only when WebGL is
@@ -676,11 +789,13 @@ function fallback3D(error) {
     front.style.setProperty("--my", Math.round(((e.clientY - c.top) / c.height) * 100) + "%");
   });
   stage.addEventListener("pointerleave", () => { lastMove = 0; });
+  stage.addEventListener("dblclick", () => setFlip(!flipped));
   const frame = (now) => {
     if (sway && now - lastMove > 1500) {
       const t = now / 1000;
-      tx = Math.sin(t * 0.7) * 0.07 + 0.05;
-      ty = Math.sin(t * 0.55) * 0.11 - 0.18;
+      // 与 animate() 里主路径的自摆同步加大（那边 ±0.34 / ±0.10），回退路径别显得更安静。
+      tx = Math.sin(t * 0.7) * 0.14 + 0.05;
+      ty = Math.sin(t * 0.55) * 0.22 - 0.18;
     }
     curX += (tx - curX) * 0.08;
     curY += (ty - curY) * 0.08;
@@ -710,27 +825,26 @@ function fallback3D(error) {
     refreshIcons();
   };
   const fallbackFinish = (value) => {
-    front.classList.remove("finish-gold", "finish-silver", "finish-pearl", "finish-original");
-    front.classList.add("finish-" + value);
-    document
-      .querySelectorAll("[data-finish]")
-      .forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.finish === value)));
-    $("finish-name").textContent =
-      { pearl: "珠光", silver: "银箔", gold: "烫金", original: "原画" }[value];
-    $("foil").disabled = value === "original";
+    const f = paintFinishUI(value);
+    front.classList.remove(...finishes.map((x) => "finish-" + x.id));
+    front.classList.add("finish-" + f.id);
   };
+  applyFinish = fallbackFinish;
   $("info").disabled = false;
   $("info").onclick = () => $("about").showModal();
   $("front").disabled = false;
   $("front").onclick = () => setFlip(false);
   $("back").disabled = false;
   $("back").onclick = () => setFlip(true);
+  $("auto").disabled = false;
+  $("auto").onclick = () => setAutoUI(!sway);
+  // setAutoUI 在回退路径里此前从没被调用过：按钮会停在模板里的 play，而 sway 其实已经是
+  // true（非 reduce 时默认自摆）。这里补一次，让图标和真实状态对齐。
+  setAutoUI(sway);
   const depthToggleFallback = $("depth-toggle");
   if (depthToggleFallback) depthToggleFallback.onclick = () => toggleSettings();
-  // The hide/show control cluster that used to sit under the card is gone: it rendered
-  // as four unlabelled, icon-less circles there. Flipping stays available through the
-  // 正面/背面 buttons and dragging already stops the idle sway, so only the panel's
-  // permanent visibility matters here.
+  // 卡片下面那排圆形小按钮早就删了（当时既没图标也没标签）：翻面交给 正面/背面，拖拽本身
+  // 就会打断自摆，所以回退路径这里只需要接上景深面板的开关。
   const bindRange = (id, output, fn, decimals = 2) => {
     $(id).disabled = false;
     $(id).addEventListener("input", () => {
@@ -780,13 +894,16 @@ function fallback3D(error) {
     setupLayerTabs();
     applyLayers();
   }
-  document.querySelectorAll("[data-finish]").forEach((b) => {
-    b.disabled = false;
-    b.onclick = () => fallbackFinish(b.dataset.finish);
-  });
+  // 点击接线在 renderFinishSwatches 里统一走 applyFinish，这里只负责解禁。
+  document.querySelectorAll("[data-finish]").forEach((b) => (b.disabled = false));
   bindRange("foil", "foil-value", (v) => {
     front.style.setProperty("--foil-amount", v);
   }, 0);
+  // 只有着色器里才有的量（鲜艳度、扫光柔和度）：CSS 回退没有对应物，整行收起，
+  // 不留一堆拖了没反应的滑杆。标记方式见模板里的 data-webgl-only。
+  document
+    .querySelectorAll(".foil-row[data-webgl-only]")
+    .forEach((row) => (row.style.display = "none"));
   $("foil-value").textContent = Math.round(Number($("foil").value) * 100) + "%";
   front.style.setProperty("--foil-amount", $("foil").value);
   // Seed scale from config; depth sliders start neutral (the layered base
@@ -796,7 +913,7 @@ function fallback3D(error) {
     $("scale").value = config.parameters.subjectScale;
   }
   applyLayers();
-  fallbackFinish(config.appearance?.finish || "gold");
+  fallbackFinish(config.appearance?.finish || defaultFinish);
   notice("浏览器未开启 WebGL：已用轻量 3D 模式显示（层次保留）");
   window.__holo = { ready: false, error: String(error), fallback3d: true };
 }
@@ -827,20 +944,9 @@ function setAuto(value) {
   refreshIcons();
 }
 function setFinish(value) {
-  finish = value;
-  uniforms.uFinish.value = { pearl: 0, silver: 1, original: 2, gold: 3 }[value] ?? 3;
-  document
-    .querySelectorAll("[data-finish]")
-    .forEach((b) =>
-      b.setAttribute("aria-pressed", String(b.dataset.finish === value)),
-    );
-  $("finish-name").textContent = {
-    pearl: "珠光",
-    silver: "银箔",
-    gold: "烫金",
-    original: "原画",
-  }[value];
-  $("foil").disabled = value === "original";
+  const f = paintFinishUI(value);
+  finish = f.id;
+  uniforms.uFinish.value = f.glsl;
 }
 function faceLabels() {
   $("front").setAttribute("aria-pressed", String(!flipped));
@@ -884,7 +990,7 @@ function paintRange(id, asPercent = false) {
 function updateInput(id, name) {
   uniforms[name].value = Number($(id).value);
   if (config.sourceMode === "relief") layoutRelief();
-  paintRange(id, id === "foil");
+  paintRange(id, id === "foil" || id === "foil-sat");
 }
 // 可用于调参的主体层：中层一定有（素材就是 assets.subject），后 / 前层只在声明了才在。
 // 单层卡返回空数组，整排 tab 和三组滑杆都藏起来。
@@ -995,17 +1101,88 @@ function reset() {
     );
   }
   syncLayerInputs();
-  setFinish(config.appearance?.finish || "pearl");
+  setFinish(config.appearance?.finish || defaultFinish);
   resize();
 }
 function toggleSettings(show = $("parameter-panel").hidden) {
-  // The depth panel is shown by default and switched from the 景深调整 button next to
-  // the finish control; no outside-click or Escape dismissal, so it only moves when
-  // the button is pressed.
+  // 景深面板默认收起（模板里就带 hidden），要点 景深调整 才展开；不点外面、不按 Esc 关它，
+  // 所以只有那个按钮会动它。
   const panel = $("parameter-panel");
   panel.hidden = !show;
   const button = $("depth-toggle");
   if (button) button.setAttribute("aria-expanded", String(show));
+}
+// ?debug=fx：效果二分面板。用途是定位"某条看得见的边界属于哪一层"——每个开关都走最便宜
+// 的实现（改 uniform / 换 1×1 全透明纹理 / 翻 visible），不碰着色器结构，也不进正式界面。
+function setupFxDebug() {
+  if (new URLSearchParams(location.search).get("debug") !== "fx") return;
+  const u = uniforms;
+  const blank = document.createElement("canvas");
+  blank.width = blank.height = 1;
+  blank.getContext("2d").clearRect(0, 0, 1, 1);
+  const foilBase = u.uFoil.value;
+  const lineBase = u.uHasLine.value;
+  const depthBase = {};
+  for (const n of ["uDepth", "uDepthBack", "uDepthFront", "uBgDepth", "uFxDepth"])
+    depthBase[n] = u[n].value;
+  const texBase = { tText: u.tText.value.image, tLine: u.tLine.value.image };
+  const byName = (re) => {
+    const out = [];
+    root.traverse((o) => {
+      if (o.isMesh && re.test(o.name)) out.push(o);
+    });
+    return out;
+  };
+  const vis = (list) => (on) => list.forEach((m) => (m.visible = on));
+  const swapTex = (name, base) => (on) => {
+    u[name].value.image = on ? base : blank;
+    u[name].value.needsUpdate = true;
+  };
+  const fx = [
+    ["彩膜（光泽）", (on) => (u.uFoil.value = on ? foilBase : 0)],
+    ["扫光亮带", (on) => (u.uHasBand.value = on ? 1 : 0)],
+    ["星屑", (on) => (u.uHasStar.value = on ? 1 : 0)],
+    ["描金线辉光", (on) => (u.uHasLine.value = on ? lineBase : 0)],
+    [
+      "层间视差（全部深度）",
+      (on) => {
+        for (const n in depthBase) u[n].value = on ? depthBase[n] : 0;
+      },
+    ],
+    ["文字层纹理", swapTex("tText", texBase.tText)],
+    ["线稿纹理", swapTex("tLine", texBase.tLine)],
+    ["正面网格", vis(byName(/^主体平面_·_完整视差合成网格$/))],
+    ["斜边网格", vis(byName(/^主体平面_·_完整视差合成网格_1$/))],
+    ["背面网格", vis(byName(/^主体平面_·_完整视差合成网格_2$/))],
+    ["外圈压边", vis(byName(/^外圈/))],
+    ["落地影", (on) => (ground ? (ground.visible = on) : null)],
+    ["背景投影", (on) => (drop ? (drop.visible = on) : null)],
+  ];
+  const box = document.createElement("div");
+  box.style.cssText =
+    "position:fixed;left:8px;top:8px;z-index:9999;background:rgba(255,255,255,.94);" +
+    "border:1px solid #d8d4cc;border-radius:8px;padding:8px 10px;font:11px/1.7 system-ui;" +
+    "color:#242625;max-height:80svh;overflow:auto";
+  const title = document.createElement("b");
+  title.textContent = "效果开关（?debug=fx）";
+  box.append(title);
+  for (const [label, set] of fx) {
+    const row = document.createElement("label");
+    row.style.display = "block";
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.checked = true;
+    cb.style.marginRight = "6px";
+    cb.onchange = () => {
+      set(cb.checked);
+      // 渲染循环在后台标签页是停的，手动补一帧，开关才立刻看得见。
+      renderer.render(scene, camera);
+    };
+    row.append(cb, document.createTextNode(label));
+    box.append(row);
+  }
+  document.body.append(box);
+  console.info("[holo-card] ?debug=fx 面板已挂载，共", fx.length, "个开关");
 }
 function setupControls() {
   if (config.sourceMode === "relief") {
@@ -1057,6 +1234,8 @@ function setupControls() {
   ["pointerup", "pointercancel", "lostpointercapture"].forEach((type) =>
     stage.addEventListener(type, release),
   );
+  // 双击翻面。两次按下各自会走一遍 pointerdown/up（顺带停掉自摆），双击本身只管翻。
+  stage.addEventListener("dblclick", () => flip());
   stage.addEventListener(
     "wheel",
     (e) => {
@@ -1105,13 +1284,11 @@ function setupControls() {
   });
   $("front").onclick = () => flip(false);
   $("back").onclick = () => flip(true);
+  $("auto").onclick = () => setAuto(!auto);
   const depthToggle = $("depth-toggle");
   if (depthToggle) depthToggle.onclick = () => toggleSettings();
-  document
-    .querySelectorAll("[data-finish]")
-    .forEach((b) => (b.onclick = () => setFinish(b.dataset.finish)));
-  // The depth panel is permanent: no toggle button, and no dismissal on an outside
-  // click or Escape any more — the controls are meant to stay in view.
+  applyFinish = setFinish;
+  // 面板默认收起，展开只认 景深调整 那个按钮：不点外面、不按 Esc 关它。
   $("info").onclick = () => $("about").showModal();
   $("close-about").onclick = () => $("about").close();
   $("about").onclick = (e) => {
@@ -1184,8 +1361,10 @@ function animate(now) {
   if (document.hidden) return;
   if (!media.matches || auto) elapsed += dt;
   if (auto) {
-    targetY = Math.sin(elapsed * 0.42) * 0.23 - 0.055;
-    targetX = Math.sin(elapsed * 0.53) * 0.055 - 0.018;
+    // 默认自摆。拖拽的夹取是 ±0.65 / ±0.36，这里只用到约一半，指针接管时不会撞到边界；
+    // 只加大摆幅，频率保持原样（嫌快就把 0.42 / 0.53 一起往下调）。
+    targetY = Math.sin(elapsed * 0.42) * 0.34 - 0.06;
+    targetX = Math.sin(elapsed * 0.53) * 0.1 - 0.02;
   }
   const ease = media.matches ? 1 : 1 - Math.exp(-dt * 8);
   root.rotation.x += (targetX - root.rotation.x) * ease;
@@ -1197,7 +1376,9 @@ function animate(now) {
     .applyMatrix4(inverse.copy(root.matrixWorld).invert());
   uniforms.uView.value.copy(uniforms.uEye.value).normalize();
   uniforms.uTime.value = media.matches && !auto ? 0 : elapsed;
-  shadow.scale.x = 1 - Math.abs(Math.sin(root.rotation.y)) * 0.14;
+  // 光源固定在左前上方：卡往哪边立起来，接触影就往反方向滑一点、略微变窄。
+  ground.position.x = 0.25 - Math.sin(root.rotation.y) * 1.2;
+  ground.scale.x = 1 - Math.abs(Math.sin(root.rotation.y)) * 0.16;
   renderer.render(scene, camera);
 }
 const fail = (message) => {

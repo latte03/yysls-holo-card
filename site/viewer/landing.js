@@ -1,5 +1,6 @@
-import { cards } from "../cards.manifest.js";
 import "./landing.css";
+import { cards } from "../cards.manifest.js";
+import { mountThemeToggle } from "./theme.js";
 
 /**
  * Landing page: the card list is rendered from the registry, so adding a card
@@ -21,3 +22,4 @@ list.replaceChildren(
     return li;
   }),
 );
+mountThemeToggle(document.getElementById("theme"));

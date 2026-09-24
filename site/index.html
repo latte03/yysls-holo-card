@@ -4,15 +4,43 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#fafafa" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#16181a"
+    />
+    <!-- 和卡页那一份相同：用户显式选过深浅就先写到 <html>，避免首屏闪一帧另一套方案。 -->
+    <script>
+      try {
+        var t = localStorage.getItem("holo-theme");
+        if (t) document.documentElement.style.colorScheme = t;
+      } catch (e) {}
+    </script>
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <title>燕云十六声 · 典藏闪卡</title>
     <script type="module" src="/viewer/landing.js"></script>
   </head>
   <body>
+    <!-- 深浅色开关：首页没有卡页那个页头，所以钉在右上角。图标和标签由 viewer/theme.js 写。 -->
+    <button
+      class="theme"
+      id="theme"
+      type="button"
+      aria-label="切换到深色"
+      title="切换到深色"
+    >
+      <i data-lucide="moon"></i>
+    </button>
     <main>
       <img
-        class="mark"
+        class="mark logo-ink"
         src="/assets/logo-ink.png"
+        alt="燕云十六声 WHERE WINDS MEET"
+        width="300"
+        height="96"
+      /><img
+        class="mark logo-light"
+        src="/assets/logo-light.png"
         alt="燕云十六声 WHERE WINDS MEET"
         width="300"
         height="96"

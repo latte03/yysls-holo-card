@@ -20,6 +20,11 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    // Vite 在 build.target 为 esnext 时把 CSS 目标定成 chrome61，lightningcss 于是把
+    // light-dark() 降级回 @media (prefers-color-scheme) 那一套 —— dev 下没事，构建产物里
+    // 手动的深浅色开关就失灵了（color-scheme 不再决定解析结果）。站点真正要求的门槛就是
+    // light-dark() 本身，所以按它出。
+    cssTarget: 'chrome123',
     rollupOptions: {
       input: {
         index: resolve(here, 'index.html'),

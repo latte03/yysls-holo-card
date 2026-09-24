@@ -4,6 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <meta name="theme-color" content="#fafafa" />
+    <meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#16181a"
+    />
+    <!-- 用户显式选过深浅时，这条同步脚本先把 color-scheme 写到 <html> 上，免得首屏先闪一
+         帧另一套方案（跟随系统那一态完全由 CSS 的 light-dark() 决定，不需要这里参与）。
+         配色方案本身在 style.css 的 token 里，这里只搬那一次选择。 -->
+    <script>
+      try {
+        var t = localStorage.getItem("holo-theme");
+        if (t) document.documentElement.style.colorScheme = t;
+      } catch (e) {}
+    </script>
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <title>燕云十六声 · 典藏闪卡</title>
     <link rel="stylesheet" href="/viewer/style.css" />
@@ -13,8 +27,14 @@
     <header class="masthead">
       <a class="wordmark" href="../index.html" aria-label="燕云十六声 · 典藏闪卡首页"
         ><img
-          class="wordmark-logo"
+          class="wordmark-logo logo-ink"
           src="/assets/logo-ink.png"
+          alt="燕云十六声 WHERE WINDS MEET"
+          width="300"
+          height="96"
+        /><img
+          class="wordmark-logo logo-light"
+          src="/assets/logo-light.png"
           alt="燕云十六声 WHERE WINDS MEET"
           width="300"
           height="96"
@@ -31,13 +51,15 @@
           <i data-lucide="info"></i>
         </button>
         <button
-          class="icon-button save-button"
-          id="save"
-          aria-label="保存卡片图片"
-          title="保存卡片图片"
-          disabled
+          class="icon-button"
+          id="theme"
+          type="button"
+          aria-label="切换到深色"
+          title="切换到深色"
         >
-          <i data-lucide="download"></i>
+          <!-- 图标 / aria-label / title 由 viewer/theme.js 按当前方案改写，
+               这里的初值只是 JS 未就绪时的样子。 -->
+          <i data-lucide="moon"></i>
         </button>
       </div>
     </header>
@@ -54,7 +76,11 @@
             <span class="loading-line"></span><span>正在装裱作品</span>
           </div>
         </div>
-        <div class="parameter-panel" id="parameter-panel">
+        <div
+          class="parameter-panel"
+          id="parameter-panel"
+          hidden
+        >
           <div class="panel-heading">
             <span>景深与构图</span>
           </div>
@@ -185,49 +211,41 @@
           </div>
           <p id="description">光与影，彼此相依。</p>
         </div>
-        <div class="face-picker" role="group" aria-label="卡片朝向">
-          <button id="front" aria-pressed="true" disabled>正面</button
-          ><button id="back" aria-pressed="false" disabled>背面</button>
+        <div class="bar-center">
+          <div class="face-picker" role="group" aria-label="卡片朝向">
+            <button id="front" aria-pressed="true" disabled>正面</button
+            ><button id="back" aria-pressed="false" disabled>背面</button>
+          </div>
+          <!-- 图标与 aria 标签由 setAuto() 按状态换成 play/pause；这里的初值只为 JS 未就绪时不空。 -->
+          <button
+            id="auto"
+            class="auto-toggle"
+            type="button"
+            aria-pressed="false"
+            aria-label="自动旋转"
+            title="自动旋转"
+            disabled
+          >
+            <i data-lucide="play"></i>
+          </button>
+          <button
+            class="icon-button save-button"
+            id="save"
+            aria-label="保存卡片图片"
+            title="保存卡片图片"
+            disabled
+          >
+            <i data-lucide="download"></i>
+          </button>
         </div>
         <div class="finish-cluster">
           <div class="finish-control">
           <div class="finish-heading">
             <span>卡面质感</span>
             <div class="swatches" role="group" aria-label="卡面材质">
-              <button
-                class="swatch pearl"
-                data-finish="pearl"
-                aria-pressed="true"
-                aria-label="珠光"
-                title="珠光"
-                disabled
-              ></button
-              ><button
-                class="swatch silver"
-                data-finish="silver"
-                aria-pressed="false"
-                aria-label="银箔"
-                title="银箔"
-                disabled
-              ></button
-              ><button
-                class="swatch gold"
-                data-finish="gold"
-                aria-pressed="true"
-                aria-label="烫金"
-                title="烫金"
-                disabled
-              ></button
-              ><button
-                class="swatch original"
-                data-finish="original"
-                aria-pressed="false"
-                aria-label="原画"
-                title="原画"
-                disabled
-              ></button>
+              <!-- 色板由 viewer/app.js 的 renderFinishSwatches() 按 site/finishes.js 渲染 -->
             </div>
-            <span id="finish-name">烫金</span>
+            <span id="finish-name">珠光</span>
           </div>
           <label class="foil-row" for="foil"
             ><span>光泽</span
@@ -241,13 +259,37 @@
               disabled
             /><output id="foil-value">52%</output></label
           >
+          <label class="foil-row" for="foil-sat" data-webgl-only
+            ><span>鲜艳</span
+            ><input
+              id="foil-sat"
+              type="range"
+              min="0.6"
+              max="2"
+              step="0.05"
+              value="1.35"
+              disabled
+            /><output id="foil-sat-value">135%</output></label
+          >
+          <label class="foil-row" for="sweep-soft" data-webgl-only
+            ><span>扫光</span
+            ><input
+              id="sweep-soft"
+              type="range"
+              min="4"
+              max="14"
+              step="0.5"
+              value="7"
+              disabled
+            /><output id="sweep-soft-value">7.00</output></label
+          >
           </div>
           <button
             id="depth-toggle"
             class="depth-toggle"
             type="button"
             aria-controls="parameter-panel"
-            aria-expanded="true"
+            aria-expanded="false"
             aria-label="显示或隐藏景深调整"
             title="显示或隐藏景深调整"
           >
@@ -270,7 +312,14 @@
       </button>
       <p class="dialog-mark">
         <img
+          class="logo-ink"
           src="/assets/logo-ink.png"
+          alt="燕云十六声 WHERE WINDS MEET"
+          width="300"
+          height="96"
+        /><img
+          class="logo-light"
+          src="/assets/logo-light.png"
           alt="燕云十六声 WHERE WINDS MEET"
           width="300"
           height="96"
