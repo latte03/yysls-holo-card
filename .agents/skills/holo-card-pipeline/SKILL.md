@@ -133,10 +133,10 @@ python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>   # 卡背（
 ```
 
 **验证点**：prep 会打印 `lineart align <scale> / <dx> / <dy> ncc <x> residual <y>px`。
-残差 >5px 时打开 `renders/preview-register.png` 人工看；恒等变换（1.000/0/0）且残差 ≤2px
-说明交付时就对好了，属正常。
+残差 >5px 才需要打开 `renders/preview-register.png` 人工看；恒等变换（1.000/0/0）且残差 ≤5px
+说明交付时就对好了，属正常（实测 002/003 ≤2px、007 2.8px，判据阈值 5px）。
 
-## 4. 卡壳 GLB（本机默认：复用共享卡壳，不跑 Blender）
+## 4. 卡壳 GLB（默认：复用共享卡壳，不跑 Blender）
 
 六张卡的 `site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，
 23668 字节，glTF 无 image chunk）——它只是卡壳几何（3 mesh + `web_front/web_edge/web_back/web_gold`
@@ -222,7 +222,7 @@ def webp(im, **kw):
     b=io.BytesIO(); im.save(b,'WEBP',method=6,**kw); return b.getvalue()
 def smallest(im):
     # 线描只当遮罩用（着色器只读 r 通道）且近乎二值：无损常常比 q85 还小、mask 逐位相同。
-    # 实测 002/003/005 无损最小，001 有损 q85 更小，所以两个都编一遍取小的那个。
+    # 实测 002/003/005/007 无损最小，001 有损 q85 更小，所以两个都编一遍取小的那个。
     return min(webp(im, lossless=True), webp(im, quality=85), key=len)
 for n in ('subject','subject_back','subject_mid','subject_front','background','text','lineart','back'):
     p=src/f'{n}.png'

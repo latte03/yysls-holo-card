@@ -20,6 +20,24 @@
     </script>
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <title>燕云十六声 · 典藏闪卡</title>
+    <!-- og:card 这一段是占位：gen-card-pages.mjs 按 cards.manifest.js 逐卡替换成
+         该卡的 og 标题/描述/缩略图（分享单卡时抓到的就不是全站默认那一套）。
+         模板本身不发布，壳页才是构建输入；标记找不到时生成器会报错退出。 -->
+    <!-- og:card:start -->
+    <!-- og:card:end -->
+    <noscript>
+      <style>
+        /* JS 整体不跑时 #loading 永远停着，别留一个假 spinner：换成一句人话。
+           landing 没有这个问题——它的卡面是纯 CSS 的，没脚本也照样看。 */
+        #loading .loading-line,
+        #loading > span:not(.loading-line) {
+          display: none;
+        }
+        #loading::after {
+          content: "卡面的实时渲染需要 JavaScript，请开启后刷新本页。";
+        }
+      </style>
+    </noscript>
     <link rel="stylesheet" href="/viewer/style.css" />
     <script type="module" src="/viewer/app.js"></script>
   </head>

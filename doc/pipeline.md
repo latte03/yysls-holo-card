@@ -15,7 +15,8 @@ subject/background/text/lineart/back 五层贴图全部由 `site/viewer/app.js` 
 边框造型）。那时用仓库内置的脚本 `.agents/skills/holo-card-pipeline/scripts/holographic/`
 （`build_card.py` / `export_web.py`，用法见 SKILL.md 第 4 节）。
 
-一条卡若走 Blender 管线，耗时约 3 分钟，几乎全在渲染。两个可跳过的渲染：
+一条卡若走 Blender 管线，耗时约 3 分钟，几乎全在渲染（默认不跑 Blender 的建卡流程也是这个量级，
+口径见 SKILL.md 开头）。两个可跳过的渲染：
 
 - **`build_card.py --skip-render`**：跳过帧 25 的 Cycles 静帧。实测导出的 GLB 与完整管线
   **逐字节一致**（md5 相同）——GLB 来自 `export_web.py`，与渲染无关。

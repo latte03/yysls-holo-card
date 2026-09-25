@@ -34,7 +34,8 @@ Qoder Sites 上线。卡壳几何全站共享同一份 GLB，五层贴图由查�
 
 `site/cards.manifest.js`。Vite 多页入口、首页链接、页头卡序切换全部由它驱动，
 每张卡的壳页 `site/<id>/index.html` 也是由它扇出的——`pnpm gen:pages`（`dev`/`build` 会自动前置）
-按清单把 `site/card.template.html` 逐字节复制成各卡壳页。**加新卡 = manifest 加一条**，
+按清单把 `site/card.template.html` 扇出成各卡壳页（og 分享元信息按卡注入，见 `doc/site.md`）。
+**加新卡 = manifest 加一条**，
 不要改任何 HTML，也不要手写 `site/<id>/index.html`（那是产物，已 gitignore）。
 
 条目上挂 `wip: '制作中'` 就是"还在做"的卡：首页给它一枚灰态占位格（不挂链接、不进 hover
@@ -99,10 +100,13 @@ Qoder Sites 上线。卡壳几何全站共享同一份 GLB，五层贴图由查�
 （壳页）、`cards/*/assets/`（备层 PNG）、`cards/*/preview-*.png`、`cards/*/renders/`、
 `cards/*/card.blend`(`1`)、`cards/*/tools/`、`cards/*/archive/`、`.ua/intermediate|tmp|.trash-*`、
 `.ua/diff-overlay.json`、`brand/fonts/FZJinLS-B-GB.ttf`（方正金隶原库，商用授权另议 + 公开仓库
-不转载体）、`__pycache__/`、`*.log`、`.DS_Store`。
+不转载体）、`__pycache__/`、`*.pyc`、`*.log`、`.DS_Store`。
 
-**必须入库**的三样：`cards/*/source/`（用户交付原件的**唯一副本**，删了无法重建，别当"可再生产物"
+**必须入库**的资产：`cards/*/source/`（用户交付原件的**唯一副本**，删了无法重建，别当"可再生产物"
 误删）、`site/public/assets/`（各卡 WebP + 共享 glb + `landing/` 缩略图，让干净克隆
-`pnpm install && pnpm dev` 直接跑起来）、`site/<id>/card.config.js` 与 `site/public/fonts/*.woff2`。
+`pnpm install && pnpm dev` 直接跑起来）、`site/<id>/card.config.js`、`site/public/fonts/*.woff2`，
+以及 `.ua/` 知识图谱本体（Understand-Anything 的代码分析产物：`knowledge-graph.json` 等，
+干净克隆后无需 LLM 就能用 viewer 打开；只有 `.ua/intermediate|tmp|.trash-*` 与
+`.ua/diff-overlay.json` 是本地过程文件，不入库）。
 
 `brand/fonts/FZJinLS-B-GB.ttf` 不入库但本机那份要留——只有重跑 `site/make_font.py` 才用到它。

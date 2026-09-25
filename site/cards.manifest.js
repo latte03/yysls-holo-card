@@ -3,8 +3,9 @@
  *
  * Everything that must know "which cards exist" reads this file: the Vite
  * multi-page inputs (vite.config.js), the landing page links, and the header
- * switcher in the viewer. Adding a card means adding one entry here plus one
- * `<id>/index.html`.
+ * switcher in the viewer. Adding a card means adding one entry here; the
+ * shell page `site/<id>/index.html` is fanned out from `card.template.html`
+ * by `pnpm gen:pages` (auto-prefixed by dev/build) — never hand-write it.
  *
  * Routes spell out index.html because the hosting platform is not guaranteed
  * to resolve a bare directory path.
