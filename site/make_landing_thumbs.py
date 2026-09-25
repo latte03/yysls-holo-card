@@ -81,6 +81,21 @@ def decontaminate(rgb: np.ndarray, alpha: np.ndarray, bg: np.ndarray) -> np.ndar
     return np.clip(out, 0, 255).astype(np.uint8)
 
 
+def paste_x(img: Image.Image) -> int:
+    """横向按「视觉质量」居中，不是按外接框。
+
+    立绘常有单侧的长飘带/长发（007 的白发往左拖出 379px 宽），按 bbox 居中会把人物
+    本体推到右边——外接框是对称的，质量不是。这里把 alpha 质心对到画布中线上，
+    再夹一次保证外接框不被推出画布（尾巴太长时以不裁切优先，宁可质心偏一点）。
+    """
+    a = np.asarray(img)[..., 3] > 60
+    w = img.width
+    xs = np.arange(w, dtype=np.float64)
+    centroid = float((a * xs).sum() / a.sum()) if a.any() else w / 2
+    left = round(CANVAS[0] / 2 - centroid)
+    return max(0, min(left, CANVAS[0] - w))
+
+
 def cutout(path: Path) -> Image.Image:
     src = Image.open(path).convert("RGB")
     rgb = np.asarray(src)
@@ -111,7 +126,7 @@ def cutout(path: Path) -> Image.Image:
     size = (max(round(img.width * scale), 1), max(round(img.height * scale), 1))
     img = img.resize(size, Image.LANCZOS)
     canvas = Image.new("RGBA", CANVAS, (0, 0, 0, 0))
-    canvas.paste(img, ((CANVAS[0] - size[0]) // 2, (CANVAS[1] - size[1]) // 2), img)
+    canvas.paste(img, (paste_x(img), (CANVAS[1] - size[1]) // 2), img)
     return canvas
 
 
