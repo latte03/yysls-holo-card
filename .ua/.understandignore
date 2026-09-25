@@ -76,3 +76,4 @@
 # --- Activated for this analysis run ---
 *.webp
 *.glb
+.ua/
