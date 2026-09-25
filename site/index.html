@@ -18,6 +18,27 @@
     </script>
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <title>燕云十六声 · 典藏闪卡</title>
+    <!-- 和卡页一样用 <link> 而不是 JS import：跨文档 view transition 的动画取的是**目的文档**
+         的样式，样式表得在解析期就在头里，等模块脚本跑完再注入就赶不上这一次过渡（dev 下
+         import 的 CSS 正是运行时才插进去的，于是"去有过渡、回没有"）。 -->
+    <link rel="stylesheet" href="/viewer/landing.css" />
+    <!--
+      hover 预渲染：指针在某个卡链接上停一下，浏览器就在后台把那一页整个跑起来——模块图、卡壳
+      GLB、六张贴图、字本子集都在点击之前下载并解码完，点击时目标文档已经 ready。两个页面都声明了
+      @view-transition，所以过渡不用再等下载，"点下去先卡一下"那段时间直接消失。
+      一张卡约 2.5MB，所以用 moderate（悬停停留才算意图）而不是不给 where 的 immediate 全量预渲染。
+      规则集要写成 where: { selector_matches }：实测 Chrome 150 对 sources 和 source:"selector"
+      两种写法都报 "unknown key" 并整条静默失效。不支持 Speculation Rules 的浏览器整段忽略，
+      和 @view-transition 的支持面一样，两条一起退化、不会一半新的一半旧。
+      写在 HTML 里而不是由 landing.js 注进 head：解析期就到位，不用等模块跑完。
+    -->
+    <script type="speculationrules">
+      {
+        "prerender": [
+          { "where": { "selector_matches": "[data-card-list] a" }, "eagerness": "moderate" }
+        ]
+      }
+    </script>
     <script type="module" src="/viewer/landing.js"></script>
   </head>
   <body>
@@ -45,7 +66,88 @@
         width="300"
         height="96"
       />
-      <ul class="links" data-card-list></ul>
+      <!-- 列表项由 gen-card-pages.mjs 从 cards.manifest.js 生成在下面的标记之间（pnpm dev /
+           build 前自动跑），别手改这段；要加卡只改 manifest。 -->
+      <ul class="links" data-card-list>
+        <!-- card-list:start -->
+        <li>
+          <a href="/001/index.html" aria-label="第一弹 · 不染不染">
+            <span class="card is-empty" aria-hidden="true">
+              <span class="foil" aria-hidden="true"></span>
+              <span class="q">?</span>
+              <span class="band" aria-hidden="true"></span>
+              <span class="glare" aria-hidden="true"></span>
+            </span>
+            <span class="name">不染不染</span>
+          </a>
+        </li>
+        <li>
+          <a href="/002/index.html" aria-label="第二弹 · 杳杳心">
+            <span class="card">
+              <span class="foil" aria-hidden="true"></span>
+              <img
+                class="fig"
+                src="/assets/landing/002.webp"
+                alt=""
+                width="441"
+                height="616"
+                decoding="async"
+              />
+              <span class="band" aria-hidden="true"></span>
+              <span class="glare" aria-hidden="true"></span>
+            </span>
+            <span class="name">杳杳心</span>
+          </a>
+        </li>
+        <li>
+          <a href="/003/index.html" aria-label="第三弹 · 听云屿">
+            <span class="card is-empty" aria-hidden="true">
+              <span class="foil" aria-hidden="true"></span>
+              <span class="q">?</span>
+              <span class="band" aria-hidden="true"></span>
+              <span class="glare" aria-hidden="true"></span>
+            </span>
+            <span class="name">听云屿</span>
+          </a>
+        </li>
+        <li>
+          <a href="/005/index.html" aria-label="第五弹 · 鹊渡枝">
+            <span class="card">
+              <span class="foil" aria-hidden="true"></span>
+              <img
+                class="fig"
+                src="/assets/landing/005.webp"
+                alt=""
+                width="441"
+                height="616"
+                decoding="async"
+              />
+              <span class="band" aria-hidden="true"></span>
+              <span class="glare" aria-hidden="true"></span>
+            </span>
+            <span class="name">鹊渡枝</span>
+          </a>
+        </li>
+        <li>
+          <a href="/006/index.html" aria-label="第六弹 · 塵燼">
+            <span class="card">
+              <span class="foil" aria-hidden="true"></span>
+              <img
+                class="fig"
+                src="/assets/landing/006.webp"
+                alt=""
+                width="441"
+                height="616"
+                decoding="async"
+              />
+              <span class="band" aria-hidden="true"></span>
+              <span class="glare" aria-hidden="true"></span>
+            </span>
+            <span class="name">塵燼</span>
+          </a>
+        </li>
+        <!-- card-list:end -->
+      </ul>
     </main>
   </body>
 </html>
