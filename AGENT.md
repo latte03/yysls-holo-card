@@ -10,7 +10,6 @@
 
 | 文件 | 什么时候读 |
 |---|---|
-| [`doc/environment.md`](doc/environment.md) | 动手前：本机依赖版本、pip/代理、agent 会话里 pnpm 被抢走 |
 | [`doc/pipeline.md`](doc/pipeline.md) | 建卡：为什么不用 Blender、交付口径、线稿配准、压暗、WebP、字体 |
 | [`doc/rendering.md`](doc/rendering.md) | 主体分层：`subjectLayers` 全部约定与着色器内部 |
 | [`doc/site.md`](doc/site.md) | 站点：路由硬事实、主题、软导航、首页膜层与缩略图 |
@@ -66,11 +65,17 @@ Qoder Sites 上线。卡壳几何全站共享同一份 GLB，五层贴图由查�
   卡级参数（`darken`、`delivery` 交付文件名）读该卡的 `card-config.json`。新卡不再拷脚本。
   **例外是 001**（专属 prep 逻辑 + 写死的 darken），别并入公共包。
 
-## 环境
+## 依赖
 
-Windows，`<repo-root>`。依赖版本、mac→win 路径换算、pip 镜像、**agent 会话里
-`pnpm` 会被独立版抢走**（要先 `export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"`）
-——全在 [`doc/environment.md`](doc/environment.md)。没有 scipy / skimage，别 import。
+- **Python**：`python3` + Pillow + numpy。管线脚本只用到这两个，别 import scipy / skimage / cv2。
+- **Node**：`node` + `pnpm`；版本以 `site/package.json` 与 `site/pnpm-lock.yaml` 为准，
+  three 从 `site/node_modules` 裸导入。
+- **Blender**：建卡**不需要**（卡壳几何全站共享，见 [`doc/pipeline.md`](doc/pipeline.md)），
+  只有要 `renders/hero.png` 参考图或改卡壳造型时才用。
+- **字体**：只用仓库内 `brand/fonts/`，**不要**引用系统字体目录——换机就渲染不出来，
+  而且系统随附字体不能提交进公开仓库。
+
+本机装了哪个版本、走哪个镜像、PATH 上有什么冲突，那是那台机器的事，不记进仓库。
 
 ## 发布
 

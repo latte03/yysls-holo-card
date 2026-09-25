@@ -55,10 +55,11 @@ GET https://api-inference.modelscope.cn/v1/tasks/{task_id}
 - 免费额度按**魔粒**扣减：轻量 0.5 / 主流 1 / 旗舰 2 每次。模型页选「魔搭社区」时左侧显示"预计魔粒扣减"。
 - 非商用、无 SLA，别拿它跑线上任务。
 
-## 本机 token 现状
+## token 从哪来
 
-`MODELSCOPE_API_TOKEN` 配在 **<toolchain-mgr> 的 `[env]` 段**，普通 Git Bash 会话里取不到（`env | grep` 为空）。
-读法：`<toolchain-mgr> exec -- node …` 或 `<toolchain-mgr> exec -- bash -lc 'echo ${#MODELSCOPE_API_TOKEN}'`。**永远不要 echo 它的值。**
+脚本只读环境变量 `MODELSCOPE_API_TOKEN`。当前 shell 里取不到（`env | grep MODELSCOPE` 为空）
+就先问用户它配在哪、怎么注入，别自己猜路径也别把它写进任何文件。**永远不要 echo 它的值**——
+要确认注入成功，只看长度：`node -e 'console.log((process.env.MODELSCOPE_API_TOKEN||"").length)'`。
 
 ## 耗时基线
 

@@ -23,7 +23,7 @@
 | 本文件 | 结构、目录、怎么跑起来 |
 | [`AGENT.md`](AGENT.md) | 结构与约定、发布判据（也是 coding agent 的入口） |
 | [`.agents/skills/holo-card-pipeline/SKILL.md`](.agents/skills/holo-card-pipeline/SKILL.md) | 建卡与发布的逐步命令 |
-| [`doc/`](doc/) | 深度记录：`environment` / `pipeline` / `rendering` / `site` / `verification` |
+| [`doc/`](doc/) | 深度记录：`pipeline` / `rendering` / `site` / `verification` |
 
 ## 目录结构
 
@@ -74,8 +74,8 @@ pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在
 
 `dist/` 就是发布物：three 已捆绑、没有 importmap、没有运行时 fetch，扔到任何静态托管即可。
 
-> 在 agent 的 Bash 会话里 `pnpm` 会被独立版抢走，先
-> `export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"`。见 [`doc/environment.md`](doc/environment.md)。
+跑站点只要 node + pnpm；建卡那侧还要 `python3` + Pillow / numpy。版本按你本机自己的来，
+仓库不假定任何机器上的路径、镜像或工具链管理器。
 
 ## 路由
 

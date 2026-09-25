@@ -243,7 +243,7 @@ f.links.new(mp2.outputs[0],pattern.inputs['Vector']); f.links.new(pattern.output
 scene['制作说明']=CFG.get('title','Card')+' · '+CFG.get('technique','')
 
 bpy.ops.wm.save_as_mainfile(filepath=str(R/'card.blend'))
-report={'blender':bpy.app.version_string,'language':bpy.context.preferences.view.language,'interface_translation':bpy.context.preferences.view.use_translate_interface,'config':bpy.utils.user_resource('CONFIG'),'render_engine':scene.render.engine,'device':scene.cycles.device,'images':{k:{'size':list(v.size),'channels':v.channels,'packed':bool(v.packed_file)} for k,v in images.items()},'planes':{o.name:{'rotation_degrees':[round(math.degrees(a),2) for a in o.rotation_euler],'mode':o.mode} for o in [card,textob,bgo]},'parameters':{k:pivot[k] for k in ['主体缩放','主体深度','背景深度']},'frames':[1,25,49,73,96]}
+report={'blender':bpy.app.version_string,'language':bpy.context.preferences.view.language,'interface_translation':bpy.context.preferences.view.use_translate_interface,'render_engine':scene.render.engine,'device':scene.cycles.device,'images':{k:{'size':list(v.size),'channels':v.channels,'packed':bool(v.packed_file)} for k,v in images.items()},'planes':{o.name:{'rotation_degrees':[round(math.degrees(a),2) for a in o.rotation_euler],'mode':o.mode} for o in [card,textob,bgo]},'parameters':{k:pivot[k] for k in ['主体缩放','主体深度','背景深度']},'frames':[1,25,49,73,96]}
 (R/'verification.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf8')
 if '--skip-render' not in args: bpy.ops.render.render(write_still=True)
 print('BUILD_AND_HERO_RENDER_COMPLETE')

@@ -1253,7 +1253,7 @@
         "典藏闪卡"
       ],
       "complexity": "moderate",
-      "languageNotes": "planes 与 parameters 的键名沿用 Blender 场景里的中文对象名（如「主体平面 · 完整视差合成」「主体深度」），因此该文件同时是场景命名的留档；config 字段仍指向旧 mac 上的绝对路径 /Users/<user>/...，换机后已失效。"
+      "languageNotes": "planes 与 parameters 的键名沿用 Blender 场景里的中文对象名（如「主体平面 · 完整视差合成」「主体深度」），因此该文件同时是场景命名的留档；config 字段仍指向旧 mac 上的绝对路径 <old-machine-path>，换机后已失效。"
     },
     {
       "id": "config:cards/002-yaoyaoxin/alignment.json",

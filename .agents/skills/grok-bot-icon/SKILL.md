@@ -15,8 +15,8 @@ metadata:
 | 项 | 事实 |
 |---|---|
 | 规范正本 | 仓库根 `grok-bot-prompt.txt`（头像版）。全身版的差异见第 1 节，**不要改正本** |
-| Token | `MODELSCOPE_API_TOKEN` 在 <toolchain-mgr> 的 `[env]` 段，**普通 Git Bash 取不到**（`env \| grep` 是空的） |
-| 调用方式 | 一律 `<toolchain-mgr> exec -- node <script>`，不要把 token 导出到别处或写进文件 |
+| Token | 只从环境变量 `MODELSCOPE_API_TOKEN` 读。当前 shell 里没有就先问用户怎么注入，**不要**把值写进仓库、命令行参数或日志 |
+| 调用方式 | `node <script>`；确认它拿得到那个环境变量再跑，永远不要 echo 它的值 |
 | 端点 | `https://api-inference.modelscope.cn/`，异步任务制，不是 OpenAI images 契约 |
 | 模型 | `Qwen/Qwen-Image-2.1`（支持 `image_url` 图生图）。模型 ID 会随上下架变，报错先查模型页范例 |
 | 账号门槛 | 需 `ms-` Access Token + 绑定阿里云账号 + 实名认证；额度按魔粒扣减（轻量 0.5 / 主流 1 / 旗舰 2 每次） |
@@ -82,8 +82,8 @@ metadata:
 ## 3. 调用
 
 ```bash
-cd <repo-root>
-<toolchain-mgr> exec -- node .agents/skills/grok-bot-icon/scripts/ms_gen.mjs \
+cd <仓库根>          # 纯粹为了让下面的相对路径成立；脚本本身只认传进去的路径
+node .agents/skills/grok-bot-icon/scripts/ms_gen.mjs \
   --image "<参考图.png>" \
   --prompt <正向提示词.txt> --negative <负面提示词.txt> \
   --size 1328x1328 --steps 40 \
@@ -124,7 +124,7 @@ cd <repo-root>
 
 | 文件 | 怎么用 |
 |---|---|
-| `scripts/ms_gen.mjs` | **执行**，不要读进上下文（`<toolchain-mgr> exec -- node …`，参数见第 3 节，`--help` 可查） |
+| `scripts/ms_gen.mjs` | **执行**，不要读进上下文（`node …`，参数见第 3 节，`--help` 可查） |
 | `assets/prompt-template.txt` | **复制后填空** → 正向提示词文件 |
 | `assets/negative-template.txt` | **复制后填空** → 负面提示词文件（进 `negative_prompt` 字段） |
 | `assets/case-grok-male-01.png` | 核验时**读图当视觉锚点**（"什么算做对了"） |

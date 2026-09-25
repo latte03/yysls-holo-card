@@ -2,7 +2,6 @@
   "blender": "5.1.2",
   "language": "zh_HANS",
   "interface_translation": true,
-  "config": "/Users/<user>/Library/Application Support/Blender/5.1/config",
   "render_engine": "CYCLES",
   "device": "GPU",
   "images": {

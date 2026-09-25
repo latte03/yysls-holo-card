@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 // ModelScope API-Inference 生图（文生图 / 图生图）。零依赖，需 MODELSCOPE_API_TOKEN。
-// 必须用 `<toolchain-mgr> exec -- node ms_gen.mjs ...` 调用：token 在 <toolchain-mgr> 的 [env] 段，普通 Git Bash 取不到。
+// token 只从环境变量 MODELSCOPE_API_TOKEN 读；别把值写进仓库、日志或命令行参数。
 
 import { readFileSync, writeFileSync } from 'node:fs';
 import { extname } from 'node:path';
 
-const USAGE = `用法: <toolchain-mgr> exec -- node ms_gen.mjs --prompt <file> --out <file> [选项]
+const USAGE = `用法: node ms_gen.mjs --prompt <file> --out <file> [选项]
 
   --model   <id>     默认 Qwen/Qwen-Image-2.1
   --prompt  <file>   正向提示词（UTF-8 文本，<2000 字符）
@@ -29,7 +29,7 @@ if (process.argv.includes('--help') || !arg('prompt')) {
 
 const token = process.env.MODELSCOPE_API_TOKEN;
 if (!token) {
-  console.error('FAIL: MODELSCOPE_API_TOKEN 不在环境里——用 `<toolchain-mgr> exec --` 包一层');
+  console.error('FAIL: 环境里没有 MODELSCOPE_API_TOKEN——先在当前 shell 里注入它（值不要写进仓库）');
   process.exit(2);
 }
 

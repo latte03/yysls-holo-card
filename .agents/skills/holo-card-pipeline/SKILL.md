@@ -10,21 +10,18 @@ metadata:
 
 一条卡从素材到上线约 3 分钟。按顺序执行，每步都有验证点；任何一步输出异常就停下来报告，不要带着疑问往下跑。
 
-## 本机环境（Windows，`<repo-root>`）
+## 运行前提
 
-本技能里出现的 mac 路径（`/Applications/Blender.app`、`/System/Library/Fonts/`、`/Users/<user>/...`）
-都是旧 mac 机器的写法，本机一律不适用。本机事实：
-
-| 项 | 本机 |
+| 项 | 事实 |
 |---|---|
-| Blender | **未安装，且建卡不需要**——见第 4 节 |
+| Blender | **建卡不需要**——卡壳几何全站共享同一份 GLB，见第 4 节 |
 | Blender 脚本 | 仓库内置 `.agents/skills/holo-card-pipeline/scripts/`，**不要**去 `~/.agents/skills/` 找第三方版本 |
-| Python | `python3`（<toolchain-mgr> shim 3.14.4）+ PIL 12.3.0 + numpy 2.5.1 + cv2 5.0.0；**没有** scipy/skimage |
-| 装 python 包 | pip 直连 pypi.org 会超时，必须加 `-i https://<pypi-mirror>/pypi/simple/` |
-| Node / pnpm | node 26.5.0、pnpm 12.6.0（<toolchain-mgr> pin）；npm registry 走 `~/.npmrc` 的 <npm-mirror> |
-| pnpm 命令 | agent 的 Bash 里先 `export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"`，否则拿到 `AppData\Local\pnpm` 的独立版 11.21.0 |
+| Python | `python3` + Pillow + numpy，管线脚本只依赖这两个；**没有** scipy / skimage，别 import |
+| Node / pnpm | 版本以 `site/package.json` 与 `site/pnpm-lock.yaml` 为准 |
 | 字体 | 用仓库内 `brand/fonts/NotoSerif-SemiBold.ttf`（SIL OFL），**不要**引用系统字体目录 |
-| GitHub | 直连 release 下载超时，`<toolchain-mgr> install` 需要活的代理（<proxy-client> 端口不固定） |
+
+包镜像、代理、本机 PATH 冲突这些属于"跑它的那台机器"的事，本技能不写死，仓库里也不该出现绝对
+路径。装不上包或命令找不到就先问用户，不要猜某个源可达。
 
 **缺素材就先问，不要猜。**
 
@@ -155,12 +152,10 @@ cp site/public/assets/003/card.glb site/public/assets/00X/
 
 ```bash
 B=../../.agents/skills/holo-card-pipeline/scripts/holographic   # 仓库内置，相对卡目录两层
+# `blender` = 你机器上的 Blender 可执行文件（命令行版通常在 PATH 上）
 
-/Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python $B/build_card.py -- "$(pwd)" --skip-render
-
-/Applications/Blender.app/Contents/MacOS/Blender --background \
-  --python $B/export_web.py -- "$(pwd)"
+blender --background --python $B/build_card.py -- "$(pwd)" --skip-render
+blender --background --python $B/export_web.py -- "$(pwd)"
 ```
 
 **`holographic/` 和 `scripts/blender_compat.py` 必须在一起**：`build_card.py` 靠 `parents[1]`
@@ -258,7 +253,6 @@ for n in ('subject','subject_back','subject_mid','subject_front','background','t
 
 ```bash
 cd site
-export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"   # 否则 pnpm 拿到独立版 11.21.0
 pnpm install
 pnpm build
 ```
@@ -289,7 +283,7 @@ cd site/dist && python3 -m http.server 4180 --bind 127.0.0.1 &
 ```
 
 要点：
-- `webDirectory` 是 `site/dist`（相对 `projectRoot`，即仓库根 `<repo-root>`），不是 `dist`。
+- `webDirectory` 是 `site/dist`（相对 `projectRoot`，即仓库根），不是 `dist`。
 - 每次发布用**新的 actionId**，`projectId` 保持不变。
 - 只有 `published: true` 且 `committed: true` 才算发布成功；`canPublish`、上传成功、Canvas 预览都只是中间态。
 - 站点：`yanyun-cards-p4207ri6kdw.qoder.zone`，描述文件 `.燕云十六声 · 典藏闪卡.qoder.site` 在仓库根。
