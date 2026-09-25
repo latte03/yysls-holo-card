@@ -24,7 +24,7 @@
   color-scheme: light dark;
   --paper: light-dark(#fafafa, #16181a);
   --ink: light-dark(#242625, #e8e6e1);
-  --muted: light-dark(#8b908a, #9ba19a);
+  --muted: light-dark(#666d65, #9ba19a);
   --accent: light-dark(#8f6a24, #d2a959);
   --highlight: #d2a959;
   --line: light-dark(#e4e2dc, #2c2f33);
@@ -81,6 +81,17 @@ main {
   width: min(168px, 100%);
   height: auto;
   margin: 0 auto 30px;
+}
+/* 读屏与爬虫专用：字标图已经"画"出了标题，但文档结构里要有一个 h1。 */
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 /* 首页是一排平铺的迷你卡：卡面全部由 CSS 画（夜墨底 + 描金内框 + 一道斜向镭射带），
    立绘压在卡面上，名字写在卡下面，整张卡就是一个链接。
@@ -390,7 +401,8 @@ img.logo-light {
   color: var(--accent);
 }
 .theme:focus-visible {
-  outline: none;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 .theme svg {
   width: 19px;

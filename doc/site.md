@@ -3,14 +3,28 @@
 ## 路径硬事实（错一个就 404 或构建失败）
 
 - 卡壳必须在 `site/<id>/index.html`，**不能**是 `site/cards/<id>/`——Vite 按目录结构服务，
-  只有根下的 `<id>/` 才对应 `/<id>/` 路由。这些壳页是 `gen-card-pages.mjs` 生成的产物：
-  Vite 必须把每页 HTML 当作**构建输入**才能把 `/viewer/app.js` 改写成带 hash 的
+  只有根下的 `<id>/` 才对应 `/<id>/` 路由。这些壳页是 `gen-card-pages.mjs` 生成的产物
+  （模板扇出 + 按 manifest 注入 og 分享元信息，所以不是逐字节副本——但源仍然只有模板和
+  manifest 两处）：Vite 必须把每页 HTML 当作**构建输入**才能把 `/viewer/app.js` 改写成带 hash 的
   `/assets/app-*.js`，所以不能跳过 `site/<id>/` 直接往 `dist/` 写。
 - `public/` 下必须再有 `assets/` 一层：`public/<id>/` 会直接挂成 `/<id>/`，和卡路由冲突。
   正确是 `public/assets/<id>/` → `/assets/<id>/`。
-- 路由一律写**显式 `index.html`**（`/001/index.html`）：托管平台不保证解析裸目录路径。
+- 路由一律写**显式 `index.html`**（`/001/index.html`）：Qoder Sites 静态托管**始终关闭目录索引**——
+  这是平台明文行为（多页站不配 HTML 回退），不是本仓库的经验之谈。平台侧支持 SPA：
+  `prepare_site` 传 `spa: true` 会生成状态码 200 的 `index.html` 回退，history 路由的深链接
+  直接导航/刷新才能落到入口页；本仓库没用它（见下）。
 - **哪些是产物**：`site/<id>/index.html`、首页 `card-list` 标记之间那段 `<li>`、
   `cards/*/assets/`、`dist/` 全都能从「源素材 + 两份配置」重建——别手改，也都不入库。
+
+## 为什么不是 SPA
+
+平台是支持的（`prepare_site` 传 `spa: true`，200 的 `index.html` 回退；注意这个回退会把缺失的
+脚本/样式也返回 HTML，调试时不能只看状态码，要检查 response body）。本仓库仍维持多页，原因是
+收益只剩首页↔卡页那一次文档加载——卡间切换本来就在同一个 WebGL 上下文里换贴图（见下节），
+已经是 SPA 体验，而首页跳卡页有 hover 预取 + Speculation Rules 提前下载。转 SPA 却要动一批
+踩坑换来的构建不变量：多页输入才有 `/viewer/app.js` 的 hash 改写、`cssTarget` 的 light-dark
+修复、显式 `index.html` 路由、壳页产物化与 gitignore 的源/产物分离。哪天要做「首页缩略图直接
+展开成卡」这类转场，再重新评估。
 
 ## 深浅色主题
 

@@ -97,14 +97,17 @@ button {
   border: 0;
   background: none;
 }
-/* 焦点框整组关掉。只删掉原来的描边规则并不够：作者样式一旦没有 outline，浏览器就换上
-   自己的 UA 默认框（实测未加规则的 tabindex 元素 outline-style 算出来是 auto），也就是
-   .stage 上那条黑边。要真的没有，得显式写 none。滑杆保留，否则键盘 Tab 到控件时完全
-   没有落点提示。 */
+/* 焦点框：控件统一 2px 金框。原来一刀切 outline:none 是为躲 UA 画在 .stage 上的黑边，
+   结果键盘用户全场没有落点——.stage 恰是主要交互面（方向键旋转/翻面都吃它），
+   所以给它一只设计过的内嵌环，控件的环照常画在外面。 */
 button:focus-visible,
-a:focus-visible,
-[tabindex]:focus-visible {
-  outline: none;
+a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.stage:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -4px;
 }
 input:focus-visible {
   outline: 2px solid var(--focus);
@@ -160,16 +163,24 @@ button svg {
   align-items: center;
   font-variant-numeric: tabular-nums;
 }
+/* 前缀和卡号同用 --muted：--faint 对 paper 只有约 1.9:1，12px 的文字不能那么淡。 */
 .collection-label > span:first-child {
-  color: var(--faint);
+  color: var(--muted);
 }
 .collection-label #edition {
   color: var(--accent);
 }
 /* Card-sequence switch: 001 / 002, gold on the card being viewed. */
-.card-link,
+/* 卡序链接静止态用 --muted 不用 --faint：12px 的 001/002 要对 paper 达到 4.5:1，
+   --faint 实测只有约 1.9:1（浅色）/ 3.7:1（深色）。当前态的金和 hover 的 --ink 本来就够。 */
+.card-link {
+  color: var(--muted);
+  letter-spacing: 0.06em;
+}
+/* 还在做的那张是 <span> 不是 <a>：它点不动，继续压暗——它是占位读数，不是导航。 */
 .card-wip {
   color: var(--faint);
+  opacity: 0.45;
   letter-spacing: 0.06em;
 }
 .card-link {
@@ -180,10 +191,6 @@ button svg {
 }
 .card-link[aria-current="page"] {
   color: var(--accent);
-}
-/* 还在做的那一张：它是 <span> 不是 <a>，所以上面两条 hover 都点不亮它，只剩淡出的读数。 */
-.card-wip {
-  opacity: 0.45;
 }
 .header-actions {
   justify-self: end;
@@ -657,6 +664,14 @@ button svg {
   border-radius: 50%;
   position: relative;
   box-shadow: inset 0 0 0 1px #0000000e;
+}
+/* 22px 的圆点够看不够点：伪元素把命中区撑到 ~40px。inset -9px 伸不进 10px 的 gap，
+   不会抢邻居的点击。 */
+.swatch::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
 }
 .swatch[aria-pressed="true"]:after {
   content: "";

@@ -18,6 +18,22 @@
     </script>
     <link rel="icon" href="/assets/favicon.png" type="image/png" />
     <title>燕云十六声 · 典藏闪卡</title>
+    <!-- 分享元信息：微信/聊天里贴链接时展示的标题、描述和代表卡面。
+         og:image 要写绝对地址（抓取器不解析相对路径）；地址与 README/AGENT 里记录的同一条。 -->
+    <meta
+      name="description"
+      content="《燕云十六声》典藏闪卡：多层镭射收藏卡的实时网页呈现——卡面可拖拽旋转、翻面，调节景深与卡面材质。"
+    />
+    <meta property="og:title" content="燕云十六声 · 典藏闪卡" />
+    <meta
+      property="og:description"
+      content="《燕云十六声》典藏闪卡：多层镭射收藏卡的实时网页呈现。"
+    />
+    <meta
+      property="og:image"
+      content="https://yanyun-cards-p4207ri6kdw.qoder.zone/assets/landing/001.webp"
+    />
+    <meta property="og:type" content="website" />
     <!-- 和卡页一样用 <link> 而不是 JS import：跨文档 view transition 的动画取的是**目的文档**
          的样式，样式表得在解析期就在头里，等模块脚本跑完再注入就赶不上这一次过渡（dev 下
          import 的 CSS 正是运行时才插进去的，于是"去有过渡、回没有"）。 -->
@@ -53,6 +69,7 @@
       <i data-lucide="moon"></i>
     </button>
     <main>
+      <h1 class="vh">燕云十六声 · 典藏闪卡</h1>
       <img
         class="mark logo-ink"
         src="/assets/logo-ink.png"

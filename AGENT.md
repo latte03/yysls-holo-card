@@ -34,7 +34,8 @@ Qoder Sites 上线。卡壳几何全站共享同一份 GLB，五层贴图由查�
 
 `site/cards.manifest.js`。Vite 多页入口、首页链接、页头卡序切换全部由它驱动，
 每张卡的壳页 `site/<id>/index.html` 也是由它扇出的——`pnpm gen:pages`（`dev`/`build` 会自动前置）
-按清单把 `site/card.template.html` 逐字节复制成各卡壳页。**加新卡 = manifest 加一条**，
+按清单把 `site/card.template.html` 扇出成各卡壳页（og 分享元信息按卡注入，见 `doc/site.md`）。
+**加新卡 = manifest 加一条**，
 不要改任何 HTML，也不要手写 `site/<id>/index.html`（那是产物，已 gitignore）。
 
 条目上挂 `wip: '制作中'` 就是"还在做"的卡：首页给它一枚灰态占位格（不挂链接、不进 hover
