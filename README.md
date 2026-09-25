@@ -1,10 +1,21 @@
 # 燕云十六声 · 典藏闪卡
 
-多层镭射收藏卡的实时网页呈现。每张卡是一条独立的数据管线（Blender 建卡 + PIL 备层），
-站点是一个 Vite 多页应用，用共享查看器按 path route 挂载多张卡。
+多层镭射收藏卡的实时网页呈现。每张卡是一条独立的数据管线（PIL 备层 → 转 WebP；卡壳几何
+全站共享，Blender 只是可选项），站点是一个 Vite 多页应用，用共享查看器按 path route 挂载多张卡。
 
 > 建卡与发布的完整操作手册在 [`.agents/skills/holo-card-pipeline/SKILL.md`](.agents/skills/holo-card-pipeline/SKILL.md)，
 > 给无上下文的 agent 看；本文件讲结构与约定。
+
+## 题材与名词
+
+游戏《燕云十六声》的故事设定在五代十国与宋代交替之时，玩家作为侠客开启自己的武侠故事，
+核心卖点是「东方武侠世界里存在的各种身份和职业」——剑术、武技、太极等玩法可混合搭配。
+卡面上的两个分类词就来自这里：
+
+- **流派**：类似职业，当前角色使用的武学。
+- **百业**：类似帮派的一种组织。
+
+卡背用 `brand/logo+文字.webp` 这张燕云十六声 lockup（页头、favicon 也都从它派生）。
 
 ## 目录结构
 
@@ -39,18 +50,21 @@ holo-card/
 │
 └─ site/                   网站本体（Vite 多页应用）
     ├─ index.html          入口：卡序选择（由清单渲染）
-    ├─ cards.manifest.js   卡注册表——唯一声明一张卡的地方
+    ├─ cards.manifest.js   卡注册表——唯一声明一张卡的地方；`wip` 字段标"还在做"的卡
     ├─ card.template.html  卡壳模板（唯一源）
-    ├─ gen-card-pages.mjs  按清单把模板扇成 site/<id>/index.html（产物，不入库）
+    ├─ gen-card-pages.mjs  按清单扇出两样产物（都不入库/不手写）：各卡壳页 site/<id>/index.html，
+    │                       以及首页那段 <li> 卡列表（写进 index.html 的 card-list 标记之间）
     ├─ viewer/             共享查看器 app.js / style.css / theme.js（深浅色）/ icons.js + icons.data.js
     │                       └─ landing.js + landing.css（首页）
     ├─ 001/ 002/ ...       每张卡：card.config.js（查看器读这份，入库）
     │                       └─ index.html 由 gen-card-pages.mjs 生成，已 gitignore
     ├─ public/assets/      原样拷贝的素材：各卡图层与 glb、logo-ink、favicon
+    │   └─ landing/        首页缩略图 <id>.webp（由 make_landing_thumbs.py 出，缺卡的格子走占位）
     ├─ public/fonts/       fzjinls.woff2 —— 方正金隶子集，改了文案要重裁
     ├─ dist/               vite build 产物，自包含，即发布物
     ├─ make_brand.py       从 brand/ 生成站点品牌资源
-    └─ make_font.py        从 brand/fonts/FZJinLS-B-GB.ttf 裁出上面那个字体子集
+    ├─ make_font.py        从 brand/fonts/FZJinLS-B-GB.ttf 裁出上面那个字体子集
+    └─ make_landing_thumbs.py  把 cards/<id>/grok-male.png 立绘抠透明底 → public/assets/landing/
 ```
 
 ## 启动与发布
@@ -72,6 +86,12 @@ pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在
 | `/001/index.html` | 第一弹 · 不染不染 |
 | `/002/index.html` | 第二弹 · 杳杳心 |
 | `/003/index.html` | 第三弹 · 听云屿 |
+| `/005/index.html` | 第五弹 · 鹊渡枝 |
+| `/006/index.html` | 第六弹 · 塵燼 |
+| `/007/index.html` | 第七弹 · 荼喏 |
+
+**没有 004**：第四弹从未立项，卡号就是跳过去的，别去"补"它。卡号以
+[`site/cards.manifest.js`](site/cards.manifest.js) 为准，本表只是给人看的副本。
 
 单卡追加 `?face=back` 直接看背面。
 
@@ -83,7 +103,7 @@ pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在
 `vite.config.js` 里的 `build.cssTarget` 就是为此；② 图片选不了 `light-dark()`，字标两张 PNG
 由 `<html data-paper>` 翻（`viewer/theme.js` 写）。
 
-卡页之间的跳转还有一层**软导航**：卡壳 GLB 五张卡逐字节相同、六个材质共享，所以换卡只需要
+卡页之间的跳转还有一层**软导航**：卡壳 GLB 六张卡逐字节相同、六个材质共享，所以换卡只需要
 换贴图——`viewer/app.js` 拦下卡序链接的点击，在同一个 WebGL 上下文里把卡转到侧棱（投影宽度
 归零的那一帧）换贴图与文案再转回来，`pushState` 同步地址栏，前进后退走同一套；加载没完成前
 文案先淡掉当进度反馈，拿不到配置就退回真导航。首页没有画布，landing ↔ 卡 仍是真导航（three
@@ -107,9 +127,11 @@ python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>
 cp site/public/assets/003/card.glb site/public/assets/00X/
 # 4. 图层转 WebP 进 site/public/assets/<卡号>/，写 site/<卡号>/card.config.js
 #    主体要分层时：card-config.json 写 delivery.subjectLayers，card.config.js 写 subjectLayers（见 AGENT.md 第 4 条）
-# 5. cards.manifest.js 加一条（壳页、首页那五行 <li>、页头卡序都由它扇出，都不用手写）
+# 5. cards.manifest.js 加一条（壳页、首页那段 <li> 卡列表、页头卡序都由它扇出，都不用手写；
+#    行数跟着清单走，别在文档或 HTML 里写死）
 #    首页列表是 gen-card-pages.mjs 写进 site/index.html 的 card-list 标记之间，别手改那段
-# 6. cd site && pnpm build
+# 6. 要首页缩略图就补 cards/00X-<name>/grok-male.png 并跑 python3 site/make_landing_thumbs.py
+# 7. cd site && pnpm build
 ```
 
 **为什么不用跑 Blender**：`card.glb` 只是共享的卡壳几何（无内嵌贴图），
@@ -139,17 +161,15 @@ subject/background/text/lineart/back 五层由 `viewer/app.js` 从站点侧 WebP
 001 不适用此工具：它的人物被 prep 裁切并下移过，与原始线稿不是相似变换关系
 （001 的定稿件残差实测 0px，不要去"修"它）。
 
-## 注意事项
+## 结构与路由约定
 
-- **card.blend 的贴图是 packed 的**：改了 `assets/` 里的 png 不会自动生效，必须重跑 `build_card.py`。
-- **两份配置，别混**：Blender 管线读 `cards/<卡号>-*/card-config.json`（JSON，要在磁盘上）；
+- **两份配置，别混**：管线读 `cards/<卡号>-*/card-config.json`（JSON，要在磁盘上）；
   网页查看器读 `site/<卡号>/card.config.js`（ES module，进打包图）。改文案两处都要改。
-- **背景压暗**：`background_orig.png` 是交付原件的快照，压暗永远从它算起，不会叠加。
-  量一下亮度再定 `DARKEN`：均值 ~190 用 0.74，~130 用 0.92，~20 用 1.0。
-- **站点素材用 WebP**：`public/assets/` 下只放 WebP（比 PNG 省约 75%），alpha 与 PNG 一致；
-  差异只出现在 alpha<128 的不可见区域。PNG 原件保留在 `cards/` 里。
-- **卡目录必须在站点根部**：`site/<卡号>/`，不能放 `site/cards/<卡号>/`——Vite 按目录结构服务。
+- **卡壳页必须在站点根部**：`site/<卡号>/`，不能放 `site/cards/<卡号>/`——Vite 按目录结构服务。
 - **`public/` 下必须有 `assets/` 一层**：`public/<卡号>/` 会直接挂成 `/<卡号>/`，和卡路由冲突。
 - **路由写显式 `index.html`**：托管平台不保证解析裸目录路径。
-- **多卡同时预览会抢 WebGL 资源**：三个以上 iframe 同时开可能偶发"作品暂时无法加载"，
-  逐张单独验证才是准的。
+- **哪些是产物**：`site/<卡号>/index.html`、首页 `card-list` 之间那段、`cards/*/assets/`、
+  `dist/` 全都能从「源素材 + 两份配置」重建——别手改，也都不入库。
+
+其余那些"踩过才知道"的坑（Blender 贴图 packed、背景压暗取值、WebP 体积口径、多卡抢 WebGL、
+线稿配准口径、字体授权）统一记在 [`AGENT.md`](AGENT.md) 的「已知的坑」，这里不重复。

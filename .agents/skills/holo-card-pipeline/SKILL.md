@@ -19,7 +19,7 @@ metadata:
 |---|---|
 | Blender | **未安装，且建卡不需要**——见第 4 节 |
 | Blender 脚本 | 仓库内置 `.agents/skills/holo-card-pipeline/scripts/`，**不要**去 `~/.agents/skills/` 找第三方版本 |
-| Python | `python3`（<toolchain-mgr> shim 3.14.4）+ PIL 12.3.0 + numpy 2.5.1；**没有** scipy/skimage/cv2 |
+| Python | `python3`（<toolchain-mgr> shim 3.14.4）+ PIL 12.3.0 + numpy 2.5.1 + cv2 5.0.0；**没有** scipy/skimage |
 | 装 python 包 | pip 直连 pypi.org 会超时，必须加 `-i https://<pypi-mirror>/pypi/simple/` |
 | Node / pnpm | node 26.5.0、pnpm 12.6.0（<toolchain-mgr> pin）；npm registry 走 `~/.npmrc` 的 <npm-mirror> |
 | pnpm 命令 | agent 的 Bash 里先 `export PATH="/c/Users/<user>/AppData/Local/<toolchain-mgr>/shims:$PATH"`，否则拿到 `AppData\Local\pnpm` 的独立版 11.21.0 |
@@ -34,8 +34,8 @@ metadata:
 
 | 项 | 说明 |
 |---|---|
-| 素材目录 | 含 `subject.png`（真透明）、`text.png`（SSR 边框+书法层）、`lineart.png`、`background.png`，均为 1024×1536 |
-| 卡号 | 如 `004`，决定目录名 `cards/004-<拼音>/` 与路由 `/004/index.html` |
+| 素材目录 | 含 `subject.png`（**真透明**——`alpha.min()` 要为 0 且有几万个半透明像素做发梢软边；整幅 255 就是透明网格被烤进 RGB 了，见「常见坑」）、`text.png`（SSR 边框+书法层）、`lineart.png`、`background.png`，均为 1024×1536 |
+| 卡号 | 如 `008`（004 从未立项，别拿它当"下一个"），决定目录名 `cards/008-<拼音>/` 与路由 `/008/index.html` |
 | 卡名 | 书法牌上的字，同时是页面标题 |
 | 流派文案 | 竖牌文字，如 `百业 · 初觉 · 流派 · XX` |
 | 第几弹 | 如 `第四弹`，用于页头与首页 |
@@ -141,7 +141,7 @@ python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>   # 卡背（
 
 ## 4. 卡壳 GLB（本机默认：复用共享卡壳，不跑 Blender）
 
-三张卡的 `site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，
+六张卡的 `site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，
 23668 字节，glTF 无 image chunk）——它只是卡壳几何（3 mesh + `web_front/web_edge/web_back/web_gold`
 四个材质名），五层贴图全部由 `site/viewer/app.js` 从 `/assets/<id>/*.webp` 加载后在着色器里合成。
 所以新卡直接复用：
@@ -239,7 +239,7 @@ for n in ('subject','subject_back','subject_mid','subject_front','background','t
 ```
 
 `cards.manifest.js` 加一条（**入口、首页链接、页头卡序全由它驱动，不用改 HTML**）：
-首页那五行 `<li>` 由 `gen-card-pages.mjs` 在 `pnpm dev` / `pnpm build` 前写进 `site/index.html` 的
+首页那段 `<li>`（当前六行，数量跟着清单走别写死）由 `gen-card-pages.mjs` 在 `pnpm dev` / `pnpm build` 前写进 `site/index.html` 的
 `<!-- card-list:start/end -->` 标记之间——**那段别手写也别手改**，只改 manifest。
 
 ```js
@@ -296,6 +296,12 @@ cd site/dist && python3 -m http.server 4180 --bind 127.0.0.1 &
 
 ## 常见坑
 
+- **交付的 subject 先进管线前验 alpha**：`python3 -c "from PIL import Image; import numpy as np; a=np.asarray(Image.open(p).convert('RGBA'))[...,3]; print(a.min(), (a<16).mean())"`。
+  整幅 255 就是**假透明**（导出时把透明网格烤进了 RGB，肉眼看像棋盘/网点底）。这种图硬抠不干净：
+  白发白衣与背景是同一族近白色，连通性泛洪能保住大轮廓，但发丝之间、臂与身之间的封闭背景洞
+  和领巾/斜挎带分不开（实测按"中性且亮"抠，领巾和带子全被误判成背景）。**别自己抠，让用户重导
+  带 alpha 的那版**。跑完 prep 后也有个免费探针：打印里的 `subject transparent` 接近 0 就是它，
+  真透明版实测 0.247。
 - **card.blend 的贴图是 packed 的**：改了 `assets/` 里的 png 不会自动生效，必须重跑 `build_card.py`。
 - **两份配置别混**：Blender 读 `cards/00X-*/card-config.json`（JSON，要在磁盘上）；
   网页读 `site/00X/card.config.js`（ES module）。改文案两处都要改。
