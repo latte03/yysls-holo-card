@@ -16,7 +16,10 @@ const calm = matchMedia("(prefers-reduced-motion: reduce)");
 
 export function mountCardLaminate(root = document) {
   if (!fine.matches || calm.matches) return false;
-  const cards = [...root.querySelectorAll(".card")];
+  // `a ` is deliberate: a work-in-progress card is rendered as a plain div (see
+  // gen-card-pages.mjs), and letting it follow the pointer would advertise a clickability
+  // it does not have.
+  const cards = [...root.querySelectorAll("a .card")];
   if (!cards.length) return false;
 
   document.documentElement.classList.add("holo-pointer");

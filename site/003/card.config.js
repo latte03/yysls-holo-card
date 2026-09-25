@@ -26,9 +26,9 @@ export default {
   // 背景同侧（-0.45 与 -0.2 同符号），翅膀对人物从"同向不同速"变成"反向"——反向比单纯
   // 加大位移好读。两个方向的代价都是拖到极限时层会像从彼此身上滑开。
   "subjectLayers": {
-    "back": { "src": "/assets/003/subject_back.webp", "depth": -0.2, "scale": 1, "offset": [0, 0] },
+    "back": { "src": "/assets/003/subject_back.webp", "label": "翅膀", "depth": -0.2, "scale": 1, "offset": [0, 0] },
     "mid": { "depth": 0.55, "scale": 1, "offset": [0, 0] },
-    "front": { "src": "/assets/003/subject_front.webp", "depth": 1.6, "scale": 1, "offset": [0, 0] }
+    "front": { "src": "/assets/003/subject_front.webp", "label": "鸟头与翅膀", "depth": 1.6, "scale": 1, "offset": [0, 0] }
   },
   "parameters": {
     "subjectScale": 1.0,

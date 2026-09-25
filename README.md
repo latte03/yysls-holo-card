@@ -107,7 +107,8 @@ python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>
 cp site/public/assets/003/card.glb site/public/assets/00X/
 # 4. 图层转 WebP 进 site/public/assets/<卡号>/，写 site/<卡号>/card.config.js
 #    主体要分层时：card-config.json 写 delivery.subjectLayers，card.config.js 写 subjectLayers（见 AGENT.md 第 4 条）
-# 5. cards.manifest.js 加一条（壳页由它扇出，不用手写也不用拷）
+# 5. cards.manifest.js 加一条（壳页、首页那五行 <li>、页头卡序都由它扇出，都不用手写）
+#    首页列表是 gen-card-pages.mjs 写进 site/index.html 的 card-list 标记之间，别手改那段
 # 6. cd site && pnpm build
 ```
 

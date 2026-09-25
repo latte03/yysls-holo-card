@@ -167,9 +167,12 @@ button svg {
   color: var(--accent);
 }
 /* Card-sequence switch: 001 / 002, gold on the card being viewed. */
-.card-link {
+.card-link,
+.card-wip {
   color: var(--faint);
   letter-spacing: 0.06em;
+}
+.card-link {
   transition: color 0.18s;
 }
 .card-link:hover {
@@ -177,6 +180,10 @@ button svg {
 }
 .card-link[aria-current="page"] {
   color: var(--accent);
+}
+/* 还在做的那一张：它是 <span> 不是 <a>，所以上面两条 hover 都点不亮它，只剩淡出的读数。 */
+.card-wip {
+  opacity: 0.45;
 }
 .header-actions {
   justify-self: end;
@@ -1118,4 +1125,17 @@ dialog dd {
   /* 两个快照都不动画 = 新页那张从一开始就压在上面，页头看起来完全没动，只有编号的金色
      当下一次换到新的那一张。整页淡出淡入的部分则照常进行。 */
   animation: none;
+}
+/* 字标是两边都有、又能一一对上的唯一元素，所以单独给它一个名字：去程它从页面中间收缩着飞进
+   页头左上角，回程再从页头飞回中间。两张是同一个 PNG 只是尺寸不同，所以快照对里的交叉淡入
+   看不出痕迹，动的只有位置。
+   它在 .masthead 这层命名元素里面，属于嵌套组（Chrome 131+）；页头那层快照会挖掉字标，字标自己飞。
+   ink / light 同图两张共用这个类，但同时只有一张没被 display:none 掉，而命名唯一性只管参与过渡的
+   元素，所以不算重名。过渡的样式按目的文档解析，这一段在 landing.css 里有一份镜像，改要一起改。 */
+.wordmark-logo {
+  view-transition-name: logo;
+}
+::view-transition-group(logo) {
+  animation-duration: 0.36s;
+  animation-timing-function: cubic-bezier(0.22, 0.61, 0.36, 1);
 }

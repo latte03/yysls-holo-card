@@ -469,6 +469,15 @@ function renderCardNav() {
     label("/"),
     Object.assign(label(""), { id: "edition" }),
     ...cards.map((card) => {
+      // 还在做的卡在页头也只占一个位：<span> 而不是 <a>，软导航只认 a[href]、卡序的
+      // hover 预加载只认 .card-link，两条接线都自动放过它，不需要额外判断。
+      if (card.wip) {
+        const s = document.createElement("span");
+        s.className = "card-wip";
+        s.textContent = card.id;
+        s.title = card.wip;
+        return s;
+      }
       const a = document.createElement("a");
       a.className = "card-link";
       a.href = card.route;
@@ -1025,6 +1034,11 @@ let layerTab = "mid";
 // 层参数组的显示：三组并列成 tab，一次只露一组。
 // 多层卡里还要把「画面景深」藏掉——那一行管的正是中层，和「中层 · 景深」是同一根滑杆。
 // WebGL 路径与 CSS-3D 降级路径共用。
+// 每张卡的前/后层装的是什么各不相同（003 是翅膀和鸟头、007 是花丛），所以模板里只留
+// 角色名，具体是什么由 card.config.js 的 subjectLayers.<层>.label 写；中层恒为人物，
+// 给个默认值就不必每张卡都声明。软导航换卡时 applyCardDom 会再跑一遍，标签跟着换。
+const LAYER_ROLE = { back: "后层", mid: "中层", front: "前层" };
+const LAYER_DEFAULT_NAME = { mid: "人物" };
 function showLayerPanelGroups(preferred) {
   const available = availableLayers();
   if (preferred && available.includes(preferred)) layerTab = preferred;
@@ -1035,6 +1049,9 @@ function showLayerPanelGroups(preferred) {
   document.querySelectorAll(".layer-tab").forEach((tab) => {
     const on = tab.dataset.layer === layerTab;
     tab.hidden = !available.includes(tab.dataset.layer);
+    const key = tab.dataset.layer;
+    const name = config.subjectLayers?.[key]?.label ?? LAYER_DEFAULT_NAME[key];
+    tab.textContent = name ? `${LAYER_ROLE[key]} · ${name}` : LAYER_ROLE[key];
     tab.setAttribute("aria-selected", String(on));
     tab.tabIndex = on ? 0 : -1;
   });

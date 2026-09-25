@@ -5,7 +5,7 @@
   font-display: swap;
 }
 /* 整站一个字体：方正金隶 FZJinLS-B-GB。浏览器加载的是 site/make_font.py 从 6.2MB 全库
-   裁出的子集（约 173KB，只含仓库文案里的字），改了文案或新增一张卡要重跑那个脚本。
+   裁出的子集（约 200KB，只含仓库文案里的字），改了文案或新增一张卡要重跑那个脚本。
    备用留宋体而不是黑体：卡名 006「塵燼」是繁体，这套字库没有那两个码位（简体「尘烬」
    有），掉到宋体至少和其余字同类。 */
 :root {
@@ -300,6 +300,31 @@ html:not(.holo-pointer) .links a:hover .band {
   font-size: clamp(24px, 4.4vw, 38px);
   font-weight: 400;
   color: rgba(232, 230, 225, 0.32);
+}
+/* 「还在做」的那张：生成器给它套 <div class="pending"> 而不是 <a>，所以上面那整套
+   （抬起、扫光、高光、描金加亮、名字变色）都挂在 `.links a:hover` 之下，对它天然不生效，
+   不用在这里再否决一遍。剩下要做的只是让它"看一眼就知道点不动"：卡面压暗去色，
+   名字转灰，下面缀一枚小标签说明为什么。 */
+.pending {
+  display: block;
+  cursor: default;
+}
+.pending .card {
+  /* 不用 opacity 压暗：那会让深色卡面往页面底色去，浅色态下整块糊成灰板，读起来像图挂了。
+     filter 在元素内部合成，卡还是那张深卡，只是"还没打光"。 */
+  filter: grayscale(0.6) brightness(0.7);
+}
+.pending .name {
+  color: var(--muted);
+}
+.pending .tag {
+  display: block;
+  margin-top: 3px;
+  font-size: clamp(10px, 1.2vw, 11.5px);
+  letter-spacing: 0.12em;
+  text-align: center;
+  color: var(--accent);
+  opacity: 0.7;
 }
 @media (prefers-reduced-motion: reduce) {
   .card,

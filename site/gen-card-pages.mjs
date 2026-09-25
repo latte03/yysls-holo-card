@@ -68,18 +68,26 @@ const items = cards
       : `              <span class="foil" aria-hidden="true"></span>\n` +
         `              <span class="q">?</span>\n` +
         BANDS;
-    return (
-      `        <li>\n` +
-      `          <a href="${card.route}" aria-label="${esc(`${card.act} · ${card.title}`)}">\n` +
+    const inner =
       `            <span class="card${withThumb.has(card.id) ? '' : ' is-empty'}"${
         withThumb.has(card.id) ? '' : ' aria-hidden="true"'
       }>\n` +
       `${face}` +
       `            </span>\n` +
-      `            <span class="name">${esc(card.title)}</span>\n` +
-      `          </a>\n` +
-      `        </li>`
-    );
+      `            <span class="name">${esc(card.title)}</span>\n`;
+    // 还在做的卡不挂链接：卡面还没定稿，首页上它只占个位。壳页照生成，所以素材一落地、
+    // 删掉 manifest 里的 wip 就整条通了（连立绘也是：make_landing_thumbs.py 一跑就换脸）。
+    // role=group 是必须的：aria-label 挂在裸 <div> 上读屏会直接忽略，而这里想带上
+    // 弹数（可见文本只有卡名和"制作中"）。
+    const box = card.wip
+      ? `          <div class="pending" role="group" aria-label="${esc(`${card.act} · ${card.title}（${card.wip}）`)}">\n` +
+        `${inner}` +
+        `            <span class="tag">${esc(card.wip)}</span>\n` +
+        `          </div>\n`
+      : `          <a href="${card.route}" aria-label="${esc(`${card.act} · ${card.title}`)}">\n` +
+        `${inner}` +
+        `          </a>\n`;
+    return `        <li>\n${box}        </li>`;
   })
   .join('\n');
 

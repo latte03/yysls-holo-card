@@ -8,6 +8,12 @@
  *
  * Routes spell out index.html because the hosting platform is not guaranteed
  * to resolve a bare directory path.
+ *
+ * `wip` marks a card whose assets are still being made. Its value is the label
+ * shown in its place. A wip card still gets its shell page (so everything works
+ * the moment the assets land) but is never linked: the landing tile and the
+ * header switcher both render it inert. It stays in this file rather than in a
+ * separate "coming soon" list so there is still exactly one place a card lives.
  */
 export const cards = [
   {
@@ -44,6 +50,13 @@ export const cards = [
     edition: 'No.006',
     title: '塵燼',
     act: '第六弹',
+  },
+  {
+    id: '007',
+    route: '/007/index.html',
+    edition: 'No.007',
+    title: '荼喏',
+    act: '第七弹',
   },
 ];
 

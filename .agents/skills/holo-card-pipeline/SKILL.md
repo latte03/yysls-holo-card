@@ -205,10 +205,12 @@ export default {
   // 每层 depth 视差深度、scale 是「画面比例」之上的倍率、offset 是卡面 uv 位移
   // （0.01 = 卡宽 1%）；卡片页面板的「大小 / 左右 / 上下 / 景深」就是这三项加深度。
   // mid 只写调参、不给 src；中层的 depth 到位后 parameters.subjectDepth 就可以删掉。
+  // label 是这层装的是什么，只给查看器调参面板的 tab 用（"前层 · 花丛"）。模板里只有中性的
+  // 角色名，别去改 card.template.html——每张卡的前/后层内容不同，标签写在自己这份 config 里。
   "subjectLayers": {
-    "back":  {"src": "/assets/00X/subject_back.webp",  "depth": -0.2, "scale": 1, "offset": [0, 0]},
-    "mid":   {"depth": 0.55, "scale": 1, "offset": [0, 0]},
-    "front": {"src": "/assets/00X/subject_front.webp", "depth": 1.6,  "scale": 1, "offset": [0, 0]}
+    "back":  {"src": "/assets/00X/subject_back.webp",  "label": "翅膀", "depth": -0.2, "scale": 1, "offset": [0, 0]},
+    "mid":   {                                          "depth": 0.55, "scale": 1, "offset": [0, 0]},
+    "front": {"src": "/assets/00X/subject_front.webp", "label": "花丛", "depth": 1.6,  "scale": 1, "offset": [0, 0]}
   },
   "safeArea": {"scale": 1.0, "offset": [0, 0]},
   "appearance": {"finish": "pearl"}
@@ -237,6 +239,8 @@ for n in ('subject','subject_back','subject_mid','subject_front','background','t
 ```
 
 `cards.manifest.js` 加一条（**入口、首页链接、页头卡序全由它驱动，不用改 HTML**）：
+首页那五行 `<li>` 由 `gen-card-pages.mjs` 在 `pnpm dev` / `pnpm build` 前写进 `site/index.html` 的
+`<!-- card-list:start/end -->` 标记之间——**那段别手写也别手改**，只改 manifest。
 
 ```js
   {
