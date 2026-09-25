@@ -33,6 +33,7 @@ holo-card/
 ├─ .agents/skills/         项目技能：holo-card-pipeline（SKILL.md + Blender 脚本）、grok-bot-icon
 ├─ brand/                  共享品牌源（唯一 logo 出处）
 │   ├─ logo+文字.webp       燕云十六声 lockup，页头/卡背/favicon 都从它派生
+│   ├─ 浅色-logo.png       浅色字标备用稿，暂无脚本引用；正式字标由 make_brand.py 从 lockup 派生
 │   └─ fonts/              仓库内字体：卡背编号 NotoSerif-SemiBold.ttf（SIL OFL）；
 │                           FZJinLS-B-GB.ttf 是整站正文的方正金隶原库（已 gitignore，商用授权另议）
 │
@@ -46,13 +47,15 @@ holo-card/
 │
 ├─ archive/legacy-v1/       v1 弃稿（AgX 标定路线），仅作对比
 │
+├─ grok-bot-prompt.txt     grok-bot-icon 技能的规范正本（头像版），不要改正本
+│
 └─ site/                   网站本体（Vite 多页应用）
     ├─ index.html          首页：卡序选择（列表由清单扇出，别手改那段）
     ├─ cards.manifest.js   卡注册表——唯一声明一张卡的地方；`wip` 字段标"还在做"的卡
     ├─ card.template.html  卡壳模板（唯一源）
     ├─ gen-card-pages.mjs  按清单扇出各卡壳页 + 首页那段 <li>（产物，不入库/不手写）
     ├─ finishes.js         卡面工艺的注册表（页头色板、CSS 类、标签都读它）
-    ├─ viewer/             共享查看器 app.js / style.css / theme.js / icons.js + landing 首页
+    ├─ viewer/             共享查看器 app.js / style.css / theme.js / icons.js(+icons.data.js) + landing 首页
     │                       └─ tune.js（dev-only 调参面板，import.meta.env.DEV 之后才进包）
     ├─ 001/ 002/ ...       每张卡：card.config.js（查看器读这份，入库）+ 生成的壳页
     ├─ public/assets/      原样拷贝的素材：各卡图层与 glb、logo-ink、favicon
@@ -102,7 +105,7 @@ pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在
 python3 tools/card_pipeline/prep_layers.py --card cards/00X-<name>
 python3 tools/card_pipeline/make_text.py   --card cards/00X-<name>
 python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>
-# 2. 卡壳直接复用（各卡 card.glb 逐字节相同，本机也没装 Blender）
+# 2. 卡壳直接复用（各卡 card.glb 逐字节相同；Blender 只在要 hero.png 或改卡壳几何时才需要）
 cp site/public/assets/003/card.glb site/public/assets/00X/
 # 3. 图层转 WebP 进 site/public/assets/<卡号>/，写 site/<卡号>/card.config.js
 # 4. cards.manifest.js 加一条（壳页、首页列表、页头卡序都由它扇出，都不用手写）
