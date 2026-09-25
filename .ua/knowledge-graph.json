@@ -1,0 +1,4974 @@
+{
+  "version": "1.0.0",
+  "project": {
+    "name": "yanyun-cards-site",
+    "languages": [
+      "css",
+      "html",
+      "javascript",
+      "json",
+      "markdown",
+      "python",
+      "site",
+      "txt"
+    ],
+    "frameworks": [
+      "Vite"
+    ],
+    "description": "燕云十六声典藏闪卡：把每张多层镭射收藏卡做成独立数据管线（Blender 建卡 + PIL 备层），再通过 Vite 多页站点与基于 three.js 的共享 WebGL 查看器按 path route 实时呈现。仓库覆盖 .agents/skills/holo-card-pipeline 操作手册与 Blender 脚本、brand 共享品牌源、tools/card_pipeline 建卡管线、cards/<NNN-slug> 卡级源数据，以及 site 站点本体。",
+    "analyzedAt": "2026-09-25T05:46:01.687Z",
+    "gitCommitHash": "32a307d3247d01fd04ee329fc6c8c783f00712c3"
+  },
+  "nodes": [
+    {
+      "id": "file:site/finishes.js",
+      "type": "file",
+      "name": "finishes.js",
+      "filePath": "site/finishes.js",
+      "summary": "卡面工艺（finish）注册表：集中声明珠光/银箔/烫金/原画四种工艺的 id、中文标签与写入 uFinish uniform 的 glsl 数值，WebGL 主路径与 CSS-3D 回退都从这里取同一个默认值。",
+      "tags": [
+        "注册表",
+        "data-model",
+        "共享模块",
+        "工艺配置"
+      ],
+      "complexity": "simple",
+      "languageNotes": "glsl 数值由着色器按阈值区间比较而非枚举：<0.5 保留光谱色、>=0.5 去饱和、约 2 关闭箔光、>2.5 变烫金，因此新增工艺是挑一个落进的区间，不是取下一个空闲整数。"
+    },
+    {
+      "id": "function:site/finishes.js:finishOf",
+      "type": "function",
+      "name": "finishOf",
+      "filePath": "site/finishes.js",
+      "lineRange": [
+        27,
+        29
+      ],
+      "summary": "按 id 查找工艺条目，未命中时回退到 defaultFinish（珠光），保证两条渲染路径的种子值始终一致。",
+      "tags": [
+        "utility",
+        "查找",
+        "默认回退"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/viewer/app.js",
+      "type": "file",
+      "name": "app.js",
+      "filePath": "site/viewer/app.js",
+      "summary": "典藏闪卡 WebGL 查看器的唯一入口脚本：内联全部 GLSL 着色器，装配 three.js 场景与共享 uniforms，驱动视差/箔光/星效渲染，并统管工艺切换、每层调参面板、卡间软导航与 CSS-3D 降级。",
+      "tags": [
+        "entry-point",
+        "webgl",
+        "three-js",
+        "shader",
+        "event-handler"
+      ],
+      "complexity": "complex",
+      "languageNotes": "着色器源码以模板字符串内联（common + frontFragment/backFragment/edgeFragment/subjectFragment/effectsFragment/textFragment），六种材质共用同一个 uniforms 对象，因此换卡只是换贴图与重算配置 uniform；顶部 __BUILT_AT__ 由 Vite define 注入，配合控制台打印的版本号区分本地/线上/缓存构建。"
+    },
+    {
+      "id": "function:site/viewer/app.js:addGroundShadow",
+      "type": "function",
+      "name": "addGroundShadow",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        304,
+        320
+      ],
+      "summary": "为卡片生成贴地接触影：一块比卡略宽、高度约其一成的高斯衰减椭圆平面，挂在 scene 上，随卡片自摆在 animate() 里横向滑动。",
+      "tags": [
+        "webgl",
+        "阴影",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:addDropShadow",
+      "type": "function",
+      "name": "addDropShadow",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        324,
+        346
+      ],
+      "summary": "生成跟随卡片旋转的背景投影：在片元着色器里用圆角矩形距离场（rrect）画软边，取代早期圆形影子造成的四角不均。",
+      "tags": [
+        "webgl",
+        "阴影",
+        "distance-field"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:loadCardTextures",
+      "type": "function",
+      "name": "loadCardTextures",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        350,
+        390
+      ],
+      "summary": "并发加载单张卡的 subject/background/text 主贴图，线稿、特效、背面与多层主体的后/前层缺失时以 1x1 DataTexture 兜底，并统一 colorSpace 与各向异性。",
+      "tags": [
+        "资源加载",
+        "async",
+        "three-js",
+        "data-model"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:configUniformValues",
+      "type": "function",
+      "name": "configUniformValues",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        392,
+        437
+      ],
+      "summary": "由卡片配置与贴图包推导只随卡变化、与滑杆无关的一整批 uniform：构图 fit、安全区缩放/偏移、每层深度与缩放位移，以及 relief/线稿/特效/星屑等模式开关。",
+      "tags": [
+        "uniform映射",
+        "配置驱动",
+        "data-model"
+      ],
+      "complexity": "simple",
+      "languageNotes": "着色器的 V 轴与 Blender UV 空间相反，所以 uSafeOffset 的 y 分量要写成 1 - scale - offset 做补偿。"
+    },
+    {
+      "id": "function:site/viewer/app.js:renderCardNav",
+      "type": "function",
+      "name": "renderCardNav",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        457,
+        482
+      ],
+      "summary": "从 cards 注册表渲染页头卡序与弹数标签，按 location.pathname 匹配当前卡并标上 aria-current，异步配置落地前先把 edition 种上。",
+      "tags": [
+        "dom",
+        "导航",
+        "注册表驱动"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:renderFinishSwatches",
+      "type": "function",
+      "name": "renderFinishSwatches",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        487,
+        504
+      ],
+      "summary": "由工艺注册表生成页头色板按钮，点击统一委派给 applyFinish，由实际生效的那条渲染路径注入自己的实现。",
+      "tags": [
+        "dom",
+        "ui",
+        "事件委派"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:paintFinishUI",
+      "type": "function",
+      "name": "paintFinishUI",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        505,
+        515
+      ],
+      "summary": "把当前工艺回写 UI：刷新色板 aria-pressed、工艺名读数，并在 noFoil 工艺（原画）下禁用光泽滑杆。",
+      "tags": [
+        "dom",
+        "ui",
+        "状态同步"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:init",
+      "type": "function",
+      "name": "init",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        522,
+        713
+      ],
+      "summary": "查看器启动主流程：接上主题开关与卡序 → 依路由动态 import 对应 card.config.js → 创建 WebGLRenderer（失败逐级降级到 CSS-3D）→ 加载贴图与 GLB 卡壳并逐网格替换材质 → 编译着色器并校验 diagnostics → 暴露 window.__holo 调试句柄后进入动画循环。",
+      "tags": [
+        "bootstrap",
+        "entry-point",
+        "webgl",
+        "async"
+      ],
+      "complexity": "complex",
+      "languageNotes": "用 import.meta.glob(\"../*/card.config.js\") 让每张卡页只打包自己那份配置；WebGL 上下文创建带两级降级重试（先放宽 powerPreference，再整体退到 CSS-3D）。"
+    },
+    {
+      "id": "function:site/viewer/app.js:fallback3D",
+      "type": "function",
+      "name": "fallback3D",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        719,
+        940
+      ],
+      "summary": "WebGL 不可用时的 CSS-3D 降级渲染：用 translateZ 按配置堆出真实层次，指针跟随倾斜、空闲自摆、双击翻面，并镜像一套等价的滑杆与工艺控制。",
+      "tags": [
+        "降级",
+        "css-3d",
+        "交互",
+        "event-handler"
+      ],
+      "complexity": "complex",
+      "languageNotes": "着色器独有的量（鲜艳度、扫光柔和度）在 CSS 侧无对应物，靠模板里的 data-webgl-only 标记整行收起，避免留下拖了没反应的滑杆。"
+    },
+    {
+      "id": "function:site/viewer/app.js:resize",
+      "type": "function",
+      "name": "resize",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        941,
+        953
+      ],
+      "summary": "按舞台尺寸与当前缩放重算正交相机视锥与渲染器尺寸，relief 卡使用更大的半高。",
+      "tags": [
+        "webgl",
+        "resize",
+        "camera"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:setAuto",
+      "type": "function",
+      "name": "setAuto",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        954,
+        966
+      ],
+      "summary": "切换自动摇摆状态，并同步按钮的 aria-pressed、无障碍标签与播放/暂停图标。",
+      "tags": [
+        "ui",
+        "状态同步",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:layoutRelief",
+      "type": "function",
+      "name": "layoutRelief",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        987,
+        999
+      ],
+      "summary": "relief 模式下把 subject/effects/text 三组网格按 RELIEF_STEP 逐层抬高 z，并用缩放滑杆的反比补偿每层 scale。",
+      "tags": [
+        "webgl",
+        "层叠",
+        "relief"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:paintRange",
+      "type": "function",
+      "name": "paintRange",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1001,
+        1010
+      ],
+      "summary": "把滑杆当前值刷到右侧读数与轨道填充上：位移类按百分比显示，其余保留两位小数。",
+      "tags": [
+        "ui",
+        "滑杆",
+        "dom"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:showLayerPanelGroups",
+      "type": "function",
+      "name": "showLayerPanelGroups",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1028,
+        1046
+      ],
+      "summary": "按该卡实际声明的主体层集合切换层参数 tab 的显隐，多层卡顺带隐藏「画面景深」行；WebGL 与 CSS-3D 两条路径共用。",
+      "tags": [
+        "ui",
+        "层面板",
+        "跨路径复用"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:setupLayerControls",
+      "type": "function",
+      "name": "setupLayerControls",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1059,
+        1077
+      ],
+      "summary": "为后/中/前三层各绑定「大小 / 左右 / 上下 / 景深」四个滑杆，写入对应的 uSize*/uOffset*/uDepth* uniform。",
+      "tags": [
+        "ui",
+        "滑杆",
+        "uniform映射"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:syncLayerInputs",
+      "type": "function",
+      "name": "syncLayerInputs",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1080,
+        1093
+      ],
+      "summary": "把 uniform 现值倒灌回所有可用层的滑杆与读数，保证重置后以及切 tab 的瞬间显示的都是配置值。",
+      "tags": [
+        "ui",
+        "状态同步",
+        "滑杆"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:reset",
+      "type": "function",
+      "name": "reset",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1094,
+        1127
+      ],
+      "summary": "复位交互姿态与全部参数：按卡片配置重建滑杆默认值、重算层 uniform、恢复默认工艺并重新适配视锥。",
+      "tags": [
+        "状态复位",
+        "ui",
+        "uniform映射"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:setupFxDebug",
+      "type": "function",
+      "name": "setupFxDebug",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1138,
+        1207
+      ],
+      "summary": "URL 带 ?debug=fx 时挂一个效果二分面板：每个开关都走最便宜的实现（改 uniform、换 1x1 全透明贴图或翻 visible），用来定位某条看得见的边界属于哪一层。",
+      "tags": [
+        "调试",
+        "dev-tool",
+        "event-handler"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:setupControls",
+      "type": "function",
+      "name": "setupControls",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1208,
+        1332
+      ],
+      "summary": "绑定 WebGL 路径的全部输入：滑杆、指针拖拽倾斜、双击翻面、滚轮缩放、键盘方向键与 f/r/空格、正面背面自动按钮、说明对话框以及 webglcontextlost 处理。",
+      "tags": [
+        "event-handler",
+        "交互",
+        "ui",
+        "无障碍"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "堆叠布局下触屏不 setPointerCapture，保留 pan-y 让纵向手势仍能滚页，只有横向拖拽转卡。"
+    },
+    {
+      "id": "function:site/viewer/app.js:saveCard",
+      "type": "function",
+      "name": "saveCard",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1333,
+        1374
+      ],
+      "summary": "以 1400x1800 离屏重绘当前正/背面并 toDataURL 下载 PNG，finally 里恢复原视锥、像素比与画面。",
+      "tags": [
+        "导出",
+        "screenshot",
+        "webgl"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:syncSliderRanges",
+      "type": "function",
+      "name": "syncSliderRanges",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1375,
+        1388
+      ],
+      "summary": "按是否 relief 模式切换景深与缩放滑杆的取值区间，让分层卡的可调范围贴合实际。",
+      "tags": [
+        "ui",
+        "滑杆",
+        "配置驱动"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:loadBundle",
+      "type": "function",
+      "name": "loadBundle",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1406,
+        1422
+      ],
+      "summary": "按卡号取（并缓存）config 与贴图包，缓存上限两份，超出即 dispose 最旧一套贴图，供 hover 预取与软导航共用。",
+      "tags": [
+        "cache",
+        "资源加载",
+        "async",
+        "内存管理"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:turnTo",
+      "type": "function",
+      "name": "turnTo",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1425,
+        1445
+      ],
+      "summary": "把卡片补间到指定 y 轴角（侧棱）：直接写 rotation 并钉住 targetY，使 animate() 的缓动空转而不打架；reduce-motion 或标签页隐藏时立即落位。",
+      "tags": [
+        "animation",
+        "tween",
+        "无障碍"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:softNavigate",
+      "type": "function",
+      "name": "softNavigate",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1446,
+        1497
+      ],
+      "summary": "卡与卡之间不换文档的软导航：转到侧棱 → 换 config、贴图 uniform 与文案 → pushState → 转回正面，失败退回真导航，并回收不再被缓存引用的旧贴图。",
+      "tags": [
+        "软导航",
+        "路由",
+        "webgl",
+        "内存管理"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:site/viewer/app.js:setupSoftNav",
+      "type": "function",
+      "name": "setupSoftNav",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1498,
+        1518
+      ],
+      "summary": "接线软导航：处理 popstate 后退、拦截卡序链接点击，并在指针划过时预取目标卡的贴图。",
+      "tags": [
+        "路由",
+        "event-handler",
+        "预取"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:animate",
+      "type": "function",
+      "name": "animate",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1519,
+        1544
+      ],
+      "summary": "每帧循环：推进自摆目标角、指数缓动姿态、把相机位置换算成卡片局部空间的 uEye/uView 视线向量、更新 uTime 与接触影偏移后渲染。",
+      "tags": [
+        "render-loop",
+        "animation",
+        "uniform映射"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/app.js:fail",
+      "type": "function",
+      "name": "fail",
+      "filePath": "site/viewer/app.js",
+      "lineRange": [
+        1545,
+        1558
+      ],
+      "summary": "加载失败兜底：把 loading 区域替换成错误文案加重试按钮，并把失败原因写进 window.__holo；已成功就绪时不再覆盖画面。",
+      "tags": [
+        "错误处理",
+        "dom",
+        "ux"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/viewer/icons.data.js",
+      "type": "file",
+      "name": "icons.data.js",
+      "filePath": "site/viewer/icons.data.js",
+      "summary": "自动生成的 lucide 图标节点树数据（v0.468.0）：以 PascalCase 为键存 [\"tag\", attrs, children] 三元组，供 icons.js 运行时内联渲染成 svg，彻底去掉外部图标 CDN 依赖。",
+      "tags": [
+        "data",
+        "图标",
+        "auto-generated",
+        "vendored"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "Sun / Moon 是深浅色开关后来手工加的两个图标，仓库里没有再生成脚本，重新生成时需保留。"
+    },
+    {
+      "id": "file:site/viewer/icons.js",
+      "type": "file",
+      "name": "icons.js",
+      "filePath": "site/viewer/icons.js",
+      "summary": "把标记里的 <i data-lucide=\"…\"> 换成内联 svg：递归渲染 icons.data.js 的节点树，并同时认 lucide 的连字符名与数据里的 PascalCase 键。",
+      "tags": [
+        "utility",
+        "dom",
+        "图标",
+        "渲染"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/icons.js:refreshIcons",
+      "type": "function",
+      "name": "refreshIcons",
+      "filePath": "site/viewer/icons.js",
+      "lineRange": [
+        16,
+        31
+      ],
+      "summary": "扫描全页 [data-lucide] 元素，查表（连字符名与 PascalCase 两种键）后替换 children 为内联 svg，并统一覆写 stroke-width 为 1.5。",
+      "tags": [
+        "dom",
+        "图标",
+        "渲染"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/viewer/landing.js",
+      "type": "file",
+      "name": "landing.js",
+      "filePath": "site/viewer/landing.js",
+      "summary": "首页入口脚本：从 cards 注册表渲染卡片列表（新增一张卡不必改 HTML），并挂上深浅色切换按钮。",
+      "tags": [
+        "entry-point",
+        "dom",
+        "首页",
+        "注册表驱动"
+      ],
+      "complexity": "simple",
+      "languageNotes": "无导出的纯副作用模块，假定模板中已存在 [data-card-list] 容器与 #theme 按钮。"
+    },
+    {
+      "id": "file:site/viewer/theme.js",
+      "type": "file",
+      "name": "theme.js",
+      "filePath": "site/viewer/theme.js",
+      "summary": "深浅色三态开关（浅色 / 深色 / 跟随系统）：配色全部交给 CSS 的 light-dark() 与 <html> 的 color-scheme，本模块只记住用户的显式选择、同步 theme-color meta，并通知 CSS 之外的颜色持有者（WebGL 画布底色与两层影子）。",
+      "tags": [
+        "主题",
+        "深浅色",
+        "发布订阅",
+        "singleton"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "localStorage 读写全包在 try/catch 里（隐私模式或 iframe 沙箱下抛错会让整页挂在导入阶段）；--paper / --stage-shadow 用 @property 注册成 <color>，getPropertyValue 才读得到已按当前方案解析的 rgb 值。"
+    },
+    {
+      "id": "function:site/viewer/theme.js:isDark",
+      "type": "function",
+      "name": "isDark",
+      "filePath": "site/viewer/theme.js",
+      "lineRange": [
+        33,
+        36
+      ],
+      "summary": "判断当前是否深色：有显式存储时按存储值，否则跟随系统 prefers-color-scheme。",
+      "tags": [
+        "主题",
+        "predicate",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/theme.js:cssColor",
+      "type": "function",
+      "name": "cssColor",
+      "filePath": "site/viewer/theme.js",
+      "lineRange": [
+        41,
+        43
+      ],
+      "summary": "读取根元素上某个 CSS 自定义属性的计算值，供 WebGL 侧取当前方案下已解析的颜色。",
+      "tags": [
+        "主题",
+        "utility",
+        "跨层桥接"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/theme.js:apply",
+      "type": "function",
+      "name": "apply",
+      "filePath": "site/viewer/theme.js",
+      "lineRange": [
+        45,
+        58
+      ],
+      "summary": "把当前选择写进 color-scheme 与 data-paper（字标靠它翻明暗两张 PNG）、刷新所有 theme-color meta，并广播给全部 onChange 订阅者。",
+      "tags": [
+        "主题",
+        "dom",
+        "广播"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/theme.js:onChange",
+      "type": "function",
+      "name": "onChange",
+      "filePath": "site/viewer/theme.js",
+      "lineRange": [
+        71,
+        74
+      ],
+      "summary": "注册主题变更回调并返回取消订阅函数，是 CSS 之外的颜色持有者（查看器画布底色、影子）跟着换色的入口。",
+      "tags": [
+        "发布订阅",
+        "hook",
+        "主题"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/viewer/theme.js:mountThemeToggle",
+      "type": "function",
+      "name": "mountThemeToggle",
+      "filePath": "site/viewer/theme.js",
+      "lineRange": [
+        78,
+        96
+      ],
+      "summary": "在页面上已有的按钮上挂主题开关：图标显示「点击后要去的那一态」，左键在明暗间切换、右键回到跟随系统。",
+      "tags": [
+        "主题",
+        "ui",
+        "event-handler",
+        "无障碍"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tools/card_pipeline/align_lineart.py",
+      "type": "file",
+      "name": "align_lineart.py",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "summary": "线稿配准步骤：把独立生成的描线以全分辨率 NCC 做粗到细的相似变换拟合（scale + translate）对齐到已完成的主体上，输出配准后的 assets/lineart.png、红色叠印验证图与记录变换与分数的 alignment.json。",
+      "tags": [
+        "entry-point",
+        "image-registration",
+        "computer-vision",
+        "card-pipeline",
+        "cli"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "同时是脚本与库：用 __name__ == '__main__' 守护 main()，而 _load_subject / _load_ink / fit / register / residual 被 prep_layers.py 直接 import 复用。刻意放弃低分辨率打分——96x144 下墨迹与边缘糊成团，会偏爱 7% 的缩放误差导致裙摆偏 50px。"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:_load_subject",
+      "type": "function",
+      "name": "_load_subject",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        38,
+        44
+      ],
+      "summary": "读取 assets/subject.png，用灰度梯度生成标准化的边缘图，并一并返回主体不透明遮罩（alpha > 128）。",
+      "tags": [
+        "helper",
+        "edge-detection",
+        "image-loading"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:_load_ink",
+      "type": "function",
+      "name": "_load_ink",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        47,
+        50
+      ],
+      "summary": "按 card-config.json 指定的交付文件名读入线稿，阈值 140 以下取反归一为 0~1 的墨迹强度图。",
+      "tags": [
+        "helper",
+        "image-loading",
+        "thresholding"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:_resample",
+      "type": "function",
+      "name": "_resample",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        53,
+        57
+      ],
+      "summary": "把浮点墨迹/边缘图缩放重采样到指定宽高（双线性），供多尺度搜索与细化阶段复用。",
+      "tags": [
+        "helper",
+        "resampling",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:_place",
+      "type": "function",
+      "name": "_place",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        60,
+        71
+      ],
+      "summary": "以画布中心为基准对线稿做缩放并平移，裁剪进目标尺寸的空画布；完全移出画布时返回 None 作为无效候选。",
+      "tags": [
+        "helper",
+        "geometry",
+        "transform"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:_ncc",
+      "type": "function",
+      "name": "_ncc",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        74,
+        79
+      ],
+      "summary": "计算主体边缘图与墨迹画布之间的归一化互相关分数，空画布返回 -1e9 以剔除无效放置。",
+      "tags": [
+        "helper",
+        "scoring",
+        "correlation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:residual",
+      "type": "function",
+      "name": "residual",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        82,
+        103
+      ],
+      "summary": "以 64px 网格分块，在 ±24 半径内搜索配准线稿与主体边缘的最优局部位移，返回中位偏移像素数——真正预示辉光能否贴合画面的指标。",
+      "tags": [
+        "validation",
+        "scoring",
+        "image-analysis"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "块内先用 solid 遮罩过滤（边缘/墨迹能量低于阈值的块直接跳过），再用 np.roll 做循环位移而非显式裁剪。"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:fit",
+      "type": "function",
+      "name": "fit",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        106,
+        132
+      ],
+      "summary": "粗到细的相似变换搜索：先在 256x384 上扫 scale 0.88~1.18 与 ±32px 平移，再在全分辨率围绕粗结果细化；恒等变换始终参与打分，避免已对准的线稿被虚假缩放拖偏。",
+      "tags": [
+        "optimization",
+        "image-registration",
+        "search"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:register",
+      "type": "function",
+      "name": "register",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        135,
+        136
+      ],
+      "summary": "按给定 scale/dx/dy 把线稿放置到 1024x1536 目标画布的薄封装，固定了输出分辨率。",
+      "tags": [
+        "helper",
+        "transform",
+        "wrapper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:proof",
+      "type": "function",
+      "name": "proof",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        139,
+        147
+      ],
+      "summary": "生成红色叠印验证图：把配准线稿作为红色层叠到白底主体之上并保存，供人工目视确认贴合度。",
+      "tags": [
+        "visualization",
+        "image-compositing",
+        "helper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/align_lineart.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "lineRange": [
+        150,
+        187
+      ],
+      "summary": "编排整条配准流程：拟合、配准、把所选变换的残差与恒等变换对照打印，输出裁剪到主体轮廓内的 assets/lineart.png 与验证图，并将变换、NCC、残差落盘到 alignment.json 留档。",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "serialization"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:tools/card_pipeline/common.py",
+      "type": "file",
+      "name": "common.py",
+      "filePath": "tools/card_pipeline/common.py",
+      "summary": "建卡管线的公共约定模块：解析 --card 卡目录、读取 card-config.json，并提供交付层文件名与多层主体（z 序）的取值入口，使新增一张卡只写配置而不必拷脚本。",
+      "tags": [
+        "utility",
+        "configuration",
+        "shared-library",
+        "card-pipeline"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "所有卡级参数集中在 DEFAULT_DELIVERY 与 SUBJECT_Z_ORDER 两个常量上；config() 用 utf-8-sig 读取以容忍 Windows 编辑器写入的 BOM。"
+    },
+    {
+      "id": "function:tools/card_pipeline/common.py:card_root",
+      "type": "function",
+      "name": "card_root",
+      "filePath": "tools/card_pipeline/common.py",
+      "lineRange": [
+        23,
+        34
+      ],
+      "summary": "从 sys.argv 中解析 --card 参数，校验卡目录下 card-config.json 存在并顺手创建 source/assets 子目录，最后返回绝对卡根路径。",
+      "tags": [
+        "cli-argument",
+        "validation",
+        "filesystem"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/common.py:config",
+      "type": "function",
+      "name": "config",
+      "filePath": "tools/card_pipeline/common.py",
+      "lineRange": [
+        37,
+        38
+      ],
+      "summary": "以 utf-8-sig 读取卡根下的 card-config.json 并解析为配置字典。",
+      "tags": [
+        "configuration",
+        "serialization",
+        "helper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/common.py:delivery",
+      "type": "function",
+      "name": "delivery",
+      "filePath": "tools/card_pipeline/common.py",
+      "lineRange": [
+        41,
+        42
+      ],
+      "summary": "返回指定层的交付文件名，卡级 delivery 配置覆盖优先，缺失则回落到 DEFAULT_DELIVERY 默认名。",
+      "tags": [
+        "configuration",
+        "helper",
+        "lookup"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/common.py:subject_layers",
+      "type": "function",
+      "name": "subject_layers",
+      "filePath": "tools/card_pipeline/common.py",
+      "lineRange": [
+        45,
+        64
+      ],
+      "summary": "按 z 序（后→中→前）返回主体层的 (资产层名, source 文件名) 列表；单层卡回落为单项，多层卡先校验 subjectLayers 映射的键合法再按 SUBJECT_Z_ORDER 排序，不受 JSON 书写顺序影响。",
+      "tags": [
+        "configuration",
+        "validation",
+        "data-model"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:tools/card_pipeline/common.py:darken",
+      "type": "function",
+      "name": "darken",
+      "filePath": "tools/card_pipeline/common.py",
+      "lineRange": [
+        67,
+        69
+      ],
+      "summary": "读取背景压暗系数，字段缺失时返回 1.0——压暗是审美决定，不由脚本默认施加。",
+      "tags": [
+        "configuration",
+        "helper",
+        "defaults"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:tools/card_pipeline/make_back.py",
+      "type": "file",
+      "name": "make_back.py",
+      "filePath": "tools/card_pipeline/make_back.py",
+      "summary": "卡背图层脚本：在 1024x1536 透明画布上绘制金色双线圆角边框、居中合成燕云十六声 logo，并用衬线字体排印 edition 编号，输出 assets/back.png。",
+      "tags": [
+        "entry-point",
+        "image-compositing",
+        "card-back",
+        "branding",
+        "cli"
+      ],
+      "complexity": "simple",
+      "languageNotes": "纯模块级顺序脚本、无函数定义；通过 sys.path.insert 引入同目录 common。圆角半径是审美取值而非几何推算结果。"
+    },
+    {
+      "id": "file:tools/card_pipeline/make_text.py",
+      "type": "file",
+      "name": "make_text.py",
+      "filePath": "tools/card_pipeline/make_text.py",
+      "summary": "文字图层脚本：将交付的边框+标题合成图按 background 尺寸重采样为 assets/text.png，并叠到深蓝底生成 preview-text.png 供目视检查。",
+      "tags": [
+        "entry-point",
+        "image-resampling",
+        "text-layer",
+        "cli"
+      ],
+      "complexity": "simple",
+      "languageNotes": "v3 约定：交付层直接可用，脚本只做尺寸归一与预览，不再重绘边框或标题。"
+    },
+    {
+      "id": "file:tools/card_pipeline/prep_layers.py",
+      "type": "file",
+      "name": "prep_layers.py",
+      "filePath": "tools/card_pipeline/prep_layers.py",
+      "summary": "图层归一化入口：逐层增强主体（单层或多层按 z 序固化成一张扁平并集）、复用 align_lineart 完成线稿配准与轮廓裁剪、按配置压暗背景，产出网页查看器使用的 assets 图层与 preview。",
+      "tags": [
+        "entry-point",
+        "image-processing",
+        "layer-pipeline",
+        "composition",
+        "cli"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "主体流程写在模块级 for/if 分支中而非函数里；导入 align_lineart 会让该模块顶层的 card_root() 再执行一次命令行解析，因此必须在同一个 --card 命令行下运行。"
+    },
+    {
+      "id": "function:tools/card_pipeline/prep_layers.py:enhance",
+      "type": "function",
+      "name": "enhance",
+      "filePath": "tools/card_pipeline/prep_layers.py",
+      "lineRange": [
+        26,
+        29
+      ],
+      "summary": "对主体图层做惯常的色彩饱和（1.10）与对比（1.08）提升，同时原样保留 alpha 通道，交付即真透明满幅时相当于直通。",
+      "tags": [
+        "helper",
+        "image-enhance",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:tools/card_pipeline/prep_layers.py:load_line_source",
+      "type": "function",
+      "name": "load_line_source",
+      "filePath": "tools/card_pipeline/prep_layers.py",
+      "lineRange": [
+        51,
+        61
+      ],
+      "summary": "按配置的线稿文件名、再回落到 lineart.jpeg 的顺序查找线稿源文件，RGBA 时先贴到白底展平，返回 (文件名, RGB 图像)，找不到则返回 (None, None)。",
+      "tags": [
+        "helper",
+        "file-lookup",
+        "image-loading"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/cards.manifest.js",
+      "type": "file",
+      "name": "cards.manifest.js",
+      "filePath": "site/cards.manifest.js",
+      "summary": "典藏闪卡的卡注册表：用单一 cards 数组声明每张卡的 id、route、edition、title、act，供 Vite 多页构建输入、落地页链接和查看器顶部切换器共同读取。新增一张卡只需在此加一条记录，再补一个 <id>/index.html 壳页。",
+      "tags": [
+        "data-model",
+        "单一数据源",
+        "卡注册表",
+        "路由声明"
+      ],
+      "complexity": "simple",
+      "languageNotes": "纯数据模块，同时提供具名导出 cards 与 default 导出。route 显式写出 index.html，因为托管平台不保证能解析裸目录路径。"
+    },
+    {
+      "id": "file:site/gen-card-pages.mjs",
+      "type": "file",
+      "name": "gen-card-pages.mjs",
+      "filePath": "site/gen-card-pages.mjs",
+      "summary": "构建前置脚本：读取 card.template.html 模板并按 cards.manifest.js 扇出每张卡的壳页 site/<id>/index.html，最后打印声明数与实际写入数。生成物落到 site/<id>/ 而非 dist/，好让 Vite 有机会改写带 hash 的资源引用。",
+      "tags": [
+        "build-system",
+        "代码生成",
+        "脚手架",
+        "脚本入口"
+      ],
+      "complexity": "simple",
+      "languageNotes": "ESM 顶层 await + node:fs/promises；写盘前先比对现有内容，只在模板变化时写入，避免刷新 mtime 触发无谓重建。生成的页面已 gitignore，唯一源是模板加 manifest。"
+    },
+    {
+      "id": "file:site/vite.config.js",
+      "type": "file",
+      "name": "vite.config.js",
+      "filePath": "site/vite.config.js",
+      "summary": "Vite 多页站点构建配置：以 cards.manifest.js 动态拼出 rollup 输入（落地页 index.html 加每张卡一个入口），注入 __BUILT_AT__ 构建时间戳供控制台版本戳使用，并固定 dev 端口 4173。新增卡片无需改动此文件。",
+      "tags": [
+        "build-system",
+        "configuration",
+        "多页构建",
+        "entry-point"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "appType: 'mpa' 声明多页模式。cssTarget 必须显式提到 chrome123：否则 build.target 为 esnext 时 Vite 把 CSS 目标定成 chrome61，lightningcss 会将 light-dark() 降级回 @media (prefers-color-scheme)，导致手动深浅色开关在构建产物里失灵。"
+    },
+    {
+      "id": "document:AGENT.md",
+      "type": "document",
+      "name": "AGENT.md",
+      "filePath": "AGENT.md",
+      "summary": "面向无上下文 coding agent 的项目操作手册：规定「卡是数据、站是站点」「声明一张卡只有一处」「两份配置别混」「主体可多层」四条硬约定，并逐条记录路径、环境、验证与 Qoder Sites 发布的既成事实和踩过的坑。",
+      "tags": [
+        "documentation",
+        "项目手册",
+        "操作约定",
+        "发布流程",
+        "避坑指南"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "以表格 + 清单沉淀硬事实（卡壳 GLB md5 逐字节相同、cards/<id>/card-config.json 与 site/<id>/card.config.js 双配置分工、Windows 与旧 mac 环境对照），是仓库内约定口径的唯一权威来源；逐步命令外包给 .agents/skills/holo-card-pipeline/SKILL.md。"
+    },
+    {
+      "id": "document:README.md",
+      "type": "document",
+      "name": "README.md",
+      "filePath": "README.md",
+      "summary": "仓库总览文档：用目录树逐层解释 brand / tools/card_pipeline / cards / site 四块职责，给出 pnpm 启动与构建命令、深浅色主题与卡间软导航机制、约 3 分钟建卡快路径，以及线稿配准的全分辨率 NCC 判据。",
+      "tags": [
+        "documentation",
+        "entry-point",
+        "目录结构",
+        "构建系统",
+        "使用指南"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "与 AGENT.md 互补：README 讲结构与机制（light-dark() 颜色 token、gen-card-pages.mjs 扇出壳页、hover 预取的显存上限），AGENT.md 讲不可违反的约束；两者都指向同一份技能手册作为操作正本。"
+    },
+    {
+      "id": "document:REDAME.md",
+      "type": "document",
+      "name": "REDAME.md",
+      "filePath": "REDAME.md",
+      "summary": "文件名拼写误置（REDAME）的早期说明片段，只保留《燕云十六声》游戏背景与「流派 / 百业」名词解释，并指定以 logo+文字图作为卡片背面。",
+      "tags": [
+        "documentation",
+        "游戏背景",
+        "名词解释",
+        "遗留文件"
+      ],
+      "complexity": "simple",
+      "languageNotes": "内容为世界观与术语备注，与当前 README/AGENT 无重叠；其引用的 ./resource/logo+文字.webp 已不存在，同名素材现位于 brand/logo+文字.webp，因此未建立文件级引用边。"
+    },
+    {
+      "id": "config:archive/legacy-v1/card-config.json",
+      "type": "config",
+      "name": "card-config.json",
+      "filePath": "archive/legacy-v1/card-config.json",
+      "summary": "第一代（legacy-v1）典藏闪卡的运行时配置：卡面文案（标题、称号、招式、编号、系列名）、镭射渲染参数（foil、主体缩放与深度、背景深度、particles、glow）、安全区 scale/offset，以及 subject/background/text/lineart 四层 PNG、card.glb 模型和背面的相对路径清单。",
+      "tags": [
+        "configuration",
+        "典藏闪卡",
+        "asset-manifest",
+        "holo-parameters",
+        "legacy-archive"
+      ],
+      "complexity": "simple",
+      "languageNotes": "assets 全部为 ./assets/ 相对路径，由同目录 app.js 用 fetch('./card-config.json') 读取；font 字段却指向 macOS 系统字体绝对路径 /System/Library/Fonts/Supplemental/Songti.ttc，换机器即失效。"
+    },
+    {
+      "id": "file:archive/legacy-v1/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "archive/legacy-v1/index.html",
+      "summary": "归档版典藏闪卡单页站点入口：品牌 header、左侧文案故事区、中间 #stage 三维舞台与操作提示、底部光影调校滑杆（镭射强度/主体缩放/主体深度/背景深度）、页脚与“关于这张卡”dialog；通过 importmap 引入 three.js 并以 type=module 挂载 ./app.js。",
+      "tags": [
+        "entry-point",
+        "markup",
+        "webgl-stage",
+        "ui-layout",
+        "legacy-archive"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "文案节点（#card-title、#collection、#technique、#edition 等）在 HTML 里全是占位文本，运行时由 app.js 从 card-config.json 注入；importmap 把 three 解析到 ../../site/node_modules/three/，因此该归档页依赖 site 目录的 node_modules 才能跑起来。"
+    },
+    {
+      "id": "file:archive/legacy-v1/style.css",
+      "type": "file",
+      "name": "style.css",
+      "filePath": "archive/legacy-v1/style.css",
+      "summary": "归档版单页的排版与主题样式：以 :root CSS 变量定义墨金深色配色和字体栈，main 采用 40%/60% 两栏栅格，为 #stage 画布、滑杆控件、dialog 弹窗提供外观，并在 1500px/1100px/760px 断点重排；文件末尾追加一段“统一白底”覆盖把主题切换为浅色。",
+      "tags": [
+        "stylesheet",
+        "design-tokens",
+        "responsive",
+        "theming",
+        "legacy-archive"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "整份样式被压成极少数超长行，6 行的行数完全反映不出真实规则密度（约 7KB）；末尾用再次声明的 :root 变量靠层叠顺序覆盖前面的深色主题，实现明暗双版本共存。"
+    },
+    {
+      "id": "config:cards/001-buran/asset-validation.json",
+      "type": "config",
+      "name": "asset-validation.json",
+      "filePath": "cards/001-buran/asset-validation.json",
+      "summary": "No.001「不染」四层交付素材的像素体检记录：subject/background/lineart/text 各自的尺寸（统一 1024×1536）、色彩模式（RGBA 或 RGB），以及透明层 subject 与 text 的 transparent_fraction / visible_fraction 占比。",
+      "tags": [
+        "configuration",
+        "素材校验",
+        "asset-manifest",
+        "alpha-stats",
+        "典藏闪卡"
+      ],
+      "complexity": "simple",
+      "languageNotes": "数值与 cards/001-buran/prep_layers.py 结尾 print 出的 alpha 统计（sa < 0.06 为透明、sa > 0.5 为实心）口径一致，属于把脚本控制台输出固化成 JSON 留档；仓库里没有再读取该文件的代码，它只作人工核对依据。"
+    },
+    {
+      "id": "config:cards/001-buran/card-config.json",
+      "type": "config",
+      "name": "card-config.json",
+      "filePath": "cards/001-buran/card-config.json",
+      "summary": "No.001「不染」典藏闪卡的卡级配置：卡面文案（标题、副标题 SSR、招式、编号 No.001、系列名、描述）、渲染模式 holographic、品牌字体路径、背景压暗系数 darken，以及主体缩放/主体深度/背景深度/foil/particles/glow 等合成参数与安全区。",
+      "tags": [
+        "configuration",
+        "典藏闪卡",
+        "holo-parameters",
+        "卡面文案",
+        "data-driven"
+      ],
+      "complexity": "simple",
+      "languageNotes": "这是 Blender/建卡管线侧的 JSON 配置，与站点侧 site/001/card.config.js 是两份并行文件（约定「两份配置别混」）：管线必须在磁盘上读到它，前端文案改动只改 card.config.js。parameters 里的 subjectScale/subjectDepth/backgroundDepth 与站点滑杆初值同名同义。"
+    },
+    {
+      "id": "config:cards/001-buran/verification.json",
+      "type": "config",
+      "name": "verification.json",
+      "filePath": "cards/001-buran/verification.json",
+      "summary": "No.001 建卡完成后的自检报告：记录 Blender 版本（5.1.2）、中文界面与 config 路径、CYCLES + GPU 渲染环境，逐张核对四层图像（1024×1536、4 通道、packed），并列出三个平面（主体/文字/背景）的旋转与对象模式、主体缩放与深度参数以及 1/25/49/73/96 抽样帧号。",
+      "tags": [
+        "configuration",
+        "build-report",
+        "blender",
+        "验证留档",
+        "典藏闪卡"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "planes 与 parameters 的键名沿用 Blender 场景里的中文对象名（如「主体平面 · 完整视差合成」「主体深度」），因此该文件同时是场景命名的留档；config 字段仍指向旧 mac 上的绝对路径 /Users/<user>/...，换机后已失效。"
+    },
+    {
+      "id": "config:cards/002-yaoyaoxin/alignment.json",
+      "type": "config",
+      "name": "alignment.json",
+      "filePath": "cards/002-yaoyaoxin/alignment.json",
+      "summary": "「杳杳心」(No.002) 卡线稿配准的留档记录：来源文件名、scale/dx/dy 变换、NCC 相似度与 chosen/identity 两种残差对比。",
+      "tags": [
+        "configuration",
+        "配准记录",
+        "线稿",
+        "质量留档",
+        "card-pipeline"
+      ],
+      "complexity": "simple",
+      "languageNotes": "由 tools/card_pipeline/align_lineart.py 写出；本卡 transform 为单位变换且 chosen 与 identity 残差同为 0.0，说明交付线稿已与主体边缘对齐、无需再配准。"
+    },
+    {
+      "id": "config:cards/002-yaoyaoxin/card-config.json",
+      "type": "config",
+      "name": "card-config.json",
+      "filePath": "cards/002-yaoyaoxin/card-config.json",
+      "summary": "No.002「杳杳心」的卡级数据源：卡面文案、darken 背景压暗量、delivery 交付文件名、视差与镭射参数以及安全区，供 Blender 建卡与各图像管线步骤共读。",
+      "tags": [
+        "configuration",
+        "卡牌数据",
+        "blender-管线",
+        "card-pipeline",
+        "单一来源"
+      ],
+      "complexity": "simple",
+      "languageNotes": "delivery 只声明 subject/text 两项（非默认交付名 Qwen_image_2.1_*.png），未写 subjectLayers，故按单层主体处理；缺失字段由 tools/card_pipeline/common.py 的默认值兜底。"
+    },
+    {
+      "id": "config:cards/002-yaoyaoxin/verification.json",
+      "type": "config",
+      "name": "verification.json",
+      "filePath": "cards/002-yaoyaoxin/verification.json",
+      "summary": "No.002 建卡完成后的环境自检报告：Blender 版本与中文界面设置、Cycles/GPU 渲染引擎，以及四张图的尺寸/通道/是否打包、三个平面旋转、主体参数与取样帧。",
+      "tags": [
+        "configuration",
+        "构建校验",
+        "blender-管线",
+        "环境快照",
+        "card-pipeline"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "planes 与 parameters 的键名是中文，直接取自 Blender 场景对象与空物体属性；config 字段记录了构建机（macOS）上的 Blender 配置绝对路径，属可移植性隐患。"
+    },
+    {
+      "id": "config:cards/003-tingyunyu/alignment.json",
+      "type": "config",
+      "name": "alignment.json",
+      "filePath": "cards/003-tingyunyu/alignment.json",
+      "summary": "第三弹「听云屿」线稿配准的留档结果：记录 lineart 源图路径、配准变换（scale/dx/dy）、NCC 相关系数 0.17753，以及 chosen 与 identity 两种方案的中位局部残差（均为 2.83 px）。残差相同说明本次配准未优于恒等变换，线稿与主体轮廓已原生对齐。",
+      "tags": [
+        "configuration",
+        "线稿配准",
+        "align-lineart",
+        "质量留档",
+        "典藏闪卡"
+      ],
+      "complexity": "simple",
+      "languageNotes": "由 tools/card_pipeline/align_lineart.py 以 --card 指定卡目录后自动写出，属于只读留档而非管线输入。"
+    },
+    {
+      "id": "config:cards/003-tingyunyu/card-config.json",
+      "type": "config",
+      "name": "card-config.json",
+      "filePath": "cards/003-tingyunyu/card-config.json",
+      "summary": "「听云屿」（No.003，传说·SSR）的卡级数据源：mode 为 holographic，含标题/副标题/技艺/系列/描述等文案、字体路径、darken 背景压暗系数，以及多层主体交付名 subject_back/mid/front 和视差镭射参数（subjectScale、subjectDepth、backgroundDepth、foil、particles、glow、safeArea）。",
+      "tags": [
+        "configuration",
+        "卡级配置",
+        "holo-parameters",
+        "asset-manifest",
+        "典藏闪卡"
+      ],
+      "complexity": "simple",
+      "languageNotes": "与 site/003/card.config.js 是两份独立配置：本文件供 Blender/建卡管线读取（须落在磁盘上），前端页面配置另成一份；参数键为 camelCase。"
+    },
+    {
+      "id": "config:cards/003-tingyunyu/verification.json",
+      "type": "config",
+      "name": "verification.json",
+      "filePath": "cards/003-tingyunyu/verification.json",
+      "summary": "「听云屿」建卡完成后的渲染校验报告：记录 Blender 5.1.2 / CYCLES / GPU 环境与界面语言 zh_HANS，四层图像（subject、text、background、lineart）均为 1024×1536 四通道打包，三个平面（主体视差合成、文字 Alpha、背景）的旋转与变换模式，以及回写的主体缩放/深度参数与抽帧序号。",
+      "tags": [
+        "configuration",
+        "构建校验",
+        "blender",
+        "render-report",
+        "典藏闪卡"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "键名中英混排（如 planes 下的「主体平面 · 完整视差合成」、parameters 下的「主体缩放」），因为脚本直接读 Blender 中文界面下的对象名与自定义属性；ensure_ascii=False 保留 CJK 原文。"
+    },
+    {
+      "id": "file:site/card.template.html",
+      "type": "file",
+      "name": "card.template.html",
+      "filePath": "site/card.template.html",
+      "summary": "单张典藏闪卡页面的 HTML 母版：定义页头（wordmark、data-card-nav 卡序导航、信息/深浅色按钮）、WebGL 展台 #stage 与加载态、景深与多层参数面板（back/mid/front 三组大小·左右·上下·景深滑杆）、卡面材质区（色板 + 光泽/鲜艳/扫光）以及作品信息 dialog。gen-card-pages.mjs 由它扇出每张卡的 site/<id>/index.html。",
+      "tags": [
+        "页面模板",
+        "entry-point",
+        "markup",
+        "webgl-宿主",
+        "多页站点"
+      ],
+      "complexity": "complex",
+      "languageNotes": "模板自身只有首屏主题引导那一小段内联脚本，行数全部来自重复的 range 控件组：#stage 与各控件 id/data-layer 构成与 viewer/app.js 的 DOM 契约，按钮的 disabled 初值等模块就绪后由 JS 解锁，data-webgl-only 标记仅 WebGL 路径使用的滑杆，多层 tab 与「画面景深」互斥显隐。"
+    },
+    {
+      "id": "file:site/index.html",
+      "type": "file",
+      "name": "index.html",
+      "filePath": "site/index.html",
+      "summary": "站点首页：只放品牌 wordmark（ink/light 两版）与空的 data-card-list 卡列表占位，条目由 viewer/landing.js 从 cards.manifest.js 渲染；同时是 Vite 多页构建的 landing 入口。",
+      "tags": [
+        "entry-point",
+        "landing",
+        "markup",
+        "主题初始化"
+      ],
+      "complexity": "simple",
+      "languageNotes": "头部内联同步脚本从 localStorage 读 holo-theme 并直接写到 <html> 的 color-scheme 上，避免首屏闪一帧另一套方案（与卡页模板同一份逻辑）；首页没有卡页那种页头，主题开关因此钉在右上角。"
+    },
+    {
+      "id": "config:site/package.json",
+      "type": "config",
+      "name": "package.json",
+      "filePath": "site/package.json",
+      "summary": "站点私有包清单：three 0.180.0 为运行时依赖、vite ^8.3.0 为构建工具；dev 与 build 脚本先执行 node gen-card-pages.mjs 扇出各卡页，再交给 Vite 做多页构建。",
+      "tags": [
+        "configuration",
+        "build-system",
+        "依赖管理",
+        "npm-scripts"
+      ],
+      "complexity": "simple",
+      "languageNotes": "\"type\": \"module\" 让配置与脚本按 ESM 解析；把 gen:pages 串进 dev/build，保证 site/<id>/index.html 始终存在，Vite 才能把它们当构建输入改写带 hash 的资源引用。"
+    },
+    {
+      "id": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "type": "document",
+      "name": "SKILL.md",
+      "filePath": ".agents/skills/holo-card-pipeline/SKILL.md",
+      "summary": "「燕云十六声 · 典藏闪卡」建卡与发布技能的权威流程文档：从素材归位、背景压暗量测定、PIL 管线脚本、Blender 卡壳 GLB 复用，到站点挂载、Vite 构建与 Qoder Sites 发布共 7 步，并附本机环境与常见坑清单。",
+      "tags": [
+        "documentation",
+        "build-system",
+        "data-pipeline",
+        "entry-point",
+        "workflow"
+      ],
+      "complexity": "complex",
+      "languageNotes": "含 YAML front matter（name/description/metadata.requires.bins），是 Agent Skill 的清单式文档；文中大量表格与命令行即为可执行步骤。"
+    },
+    {
+      "id": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "type": "file",
+      "name": "blender_compat.py",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "summary": "Blender 版本兼容层：为建卡脚本统一配置 Cycles 计算设备（macOS Metal / 其它平台 OptiX，失败回退 CPU），并按新旧 API 分支搭建 Fog Glow 合成器节点树。",
+      "tags": [
+        "utility",
+        "compatibility",
+        "blender",
+        "rendering",
+        "factory"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "通过 hasattr(scene, 'compositing_node_group') 区分 Blender 4.x 合成节点组与旧版 scene.node_tree，两种分支的输出节点类型不同。"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_cycles_device",
+      "type": "function",
+      "name": "configure_cycles_device",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "lineRange": [
+        6,
+        20
+      ],
+      "summary": "遍历 Cycles 插件偏好里的设备列表，优先启用 GPU 并把场景切到 GPU 渲染；平台决定 compute_device_type，异常时打印回退原因并保持 CPU。",
+      "tags": [
+        "utility",
+        "rendering",
+        "gpu",
+        "configuration"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_compositor",
+      "type": "function",
+      "name": "configure_compositor",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "lineRange": [
+        23,
+        57
+      ],
+      "summary": "创建「闪卡辉光」合成链（渲染层 → Fog Glow 高质量辉光 → 输出），内部用一个 node() 闭包统一点位与命名，返回新建的节点树。",
+      "tags": [
+        "utility",
+        "blender",
+        "compositor",
+        "factory"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "file",
+      "name": "build_card.py",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "summary": "Blender 侧的闪卡生成主脚本：程序化搭出视差 UV 与镭射条带两个节点组、六套材质、圆角卡面/文字/边框几何与相机灯光，读取 card-config.json 后保存 card.blend、写 verification.json 并渲染 hero.png。",
+      "tags": [
+        "entry-point",
+        "blender",
+        "shader",
+        "data-pipeline",
+        "build-system"
+      ],
+      "complexity": "complex",
+      "languageNotes": "整体是自上而下的 bpy 脚本而非模块化库：helpers 是脚本内的简短闭包，材质/节点名大量使用中文标识符，靠 sys.path 注入 parents[1] 导入 blender_compat。"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:perimeter",
+      "type": "function",
+      "name": "perimeter",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        158,
+        163
+      ],
+      "summary": "生成圆角矩形的周长采样点序列：四段圆弧各取 n+1 个点，作为卡面与压边环的顶点来源。",
+      "tags": [
+        "utility",
+        "geometry",
+        "math"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:plane",
+      "type": "function",
+      "name": "plane",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        165,
+        183
+      ],
+      "summary": "按圆角轮廓构建一张带厚度、多材质槽与 UV 的卡面平面，挂到转卡枢轴下并固定 X 轴 90° 旋转；返回新建物体。",
+      "tags": [
+        "factory",
+        "geometry",
+        "blender",
+        "mesh"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "厚度模式下按多边形索引把材质槽 1/2 分配给卡边与背面，UV 由顶点坐标反推为 0–1，因此物体旋转不能应用。"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:ring",
+      "type": "function",
+      "name": "ring",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        190,
+        198
+      ],
+      "summary": "由内外两条圆角周长采样点拼出压边环网格（全息外圈与古金内圈），并写入贴合卡面的 UV。",
+      "tags": [
+        "factory",
+        "geometry",
+        "blender",
+        "mesh"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "type": "file",
+      "name": "export_web.py",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "summary": "把 build_card.py 产出的 card.blend 转成网页用 GLB：清掉转卡动画、新建 web_front/web_edge/web_back/web_text/web_gold 五个纯色材质替换原 Blender 材质，仅导出选中网格且不含贴图 chunk。",
+      "tags": [
+        "entry-point",
+        "blender",
+        "export",
+        "serialization",
+        "gltf"
+      ],
+      "complexity": "simple",
+      "languageNotes": "故意只保留材质名与几何：五层贴图由 site/viewer/app.js 在着色器里合成，因此 GLB 体积稳定、多卡可逐字节复用同一卡壳。"
+    },
+    {
+      "id": "file:.燕云十六声 · 典藏闪卡.qoder.site",
+      "type": "file",
+      "name": ".燕云十六声 · 典藏闪卡.qoder.site",
+      "filePath": ".燕云十六声 · 典藏闪卡.qoder.site",
+      "summary": "Qoder Sites 站点描述文件（单行 JSON）：记录站点名、projectId/siteId/deploymentId、最新发布产物哈希与 actionId，并内联了已发布首页 index.html 的 base64 快照。",
+      "tags": [
+        "deployment",
+        "configuration",
+        "site-descriptor",
+        "serialization"
+      ],
+      "complexity": "simple",
+      "languageNotes": "扩展名 .qoder.site 无解析器注册；其内容等价于发布状态清单，发布流程要求每次换新 actionId 而保持 projectId。"
+    },
+    {
+      "id": "file:archive/legacy-v1/app.js",
+      "type": "file",
+      "name": "app.js",
+      "filePath": "archive/legacy-v1/app.js",
+      "summary": "已废弃的第一代闪卡查看器：three.js + EffectComposer/UnrealBloom 管线，内联 GLSL 顶点/片元着色器实时合成镭射闪卡，读取同目录 card-config.json 并提供拖拽、翻转与截图交互。",
+      "tags": [
+        "legacy",
+        "webgl",
+        "shader",
+        "event-handler",
+        "entry-point"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "着色器源码以模板字符串内嵌（spectrum/overlay/hash/noise 等 GLSL 辅助函数）；保留 ?v1=1 作为 AgX 校准旧路由的对照入口。"
+    },
+    {
+      "id": "function:archive/legacy-v1/app.js:init",
+      "type": "function",
+      "name": "init",
+      "filePath": "archive/legacy-v1/app.js",
+      "lineRange": [
+        74,
+        87
+      ],
+      "summary": "启动流程：拉取 card-config.json 填充文案、建立 WebGLRenderer 与合成器通道、并发加载各层贴图并设置各向异性过滤，再导入 GLB 卡壳、绑定控件并进入渲染循环。",
+      "tags": [
+        "initialization",
+        "webgl",
+        "asset-loading",
+        "entry-point"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:archive/legacy-v1/app.js:setupControls",
+      "type": "function",
+      "name": "setupControls",
+      "filePath": "archive/legacy-v1/app.js",
+      "lineRange": [
+        92,
+        102
+      ],
+      "summary": "为舞台注册滑杆、指针拖拽、滚轮缩放、键盘（方向键/f/r）与按钮事件，并实现截图导出和「关于」对话框的开合。",
+      "tags": [
+        "event-handler",
+        "interaction",
+        "ui"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "document:brand/fonts/OFL.txt",
+      "type": "document",
+      "name": "OFL.txt",
+      "filePath": "brand/fonts/OFL.txt",
+      "summary": "Noto Serif SemiBold 字体的 SIL Open Font License 1.1 全文，是卡背与书法排版使用仓库内字体的授权依据。",
+      "tags": [
+        "documentation",
+        "license",
+        "fonts"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "标准 OFL 模板文本；条款要求衍生字体不得单独售卖且必须保留许可证，因此不能改用操作系统授权的 Songti/simsun。"
+    },
+    {
+      "id": "file:cards/001-buran/align_lineart.py",
+      "type": "file",
+      "name": "align_lineart.py",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "summary": "001 卡的线稿配准脚本：以两阶段搜索（粗尺度 256×384 + 原生分辨率精修）拟合相似变换，把独立生成的线描对齐到已完成主体，输出 lineart.png、配准确认图与 alignment.json。",
+      "tags": [
+        "data-pipeline",
+        "image-processing",
+        "registration",
+        "validation",
+        "entry-point"
+      ],
+      "complexity": "complex",
+      "languageNotes": "只用 numpy + PIL（无 scipy/skimage/cv2）：以归一化互相关做打分，残差用 np.roll 的局部位移中位数估计；恒等变换始终作为候选，避免破坏已对好的稿件。"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:_load_subject",
+      "type": "function",
+      "name": "_load_subject",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        33,
+        39
+      ],
+      "summary": "读取 subject.png 并用灰度梯度幅值构造标准化后的主体边缘能量图，作为配准的参考场。",
+      "tags": [
+        "image-processing",
+        "loader",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:_place",
+      "type": "function",
+      "name": "_place",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        55,
+        66
+      ],
+      "summary": "按给定缩放与位移把墨线栅格重采样并贴合到目标尺寸画布上，裁剪越界部分返回候选位图。",
+      "tags": [
+        "image-processing",
+        "transform",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:_ncc",
+      "type": "function",
+      "name": "_ncc",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        69,
+        74
+      ],
+      "summary": "计算线稿掩膜与主体边缘图之间的归一化互相关得分，空掩膜返回负值以保证恒等候选可比。",
+      "tags": [
+        "image-processing",
+        "scoring",
+        "math",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:residual",
+      "type": "function",
+      "name": "residual",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        77,
+        98
+      ],
+      "summary": "在若干图像块内以 np.roll 穷举局部位移，取相关最高的偏移并返回其像素距离中位数，作为配准质量的可信度量。",
+      "tags": [
+        "validation",
+        "image-processing",
+        "metrics"
+      ],
+      "complexity": "complex"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:fit",
+      "type": "function",
+      "name": "fit",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        101,
+        127
+      ],
+      "summary": "两阶段求解相似变换：先在粗尺度网格上扫缩放与平移，再在全分辨率下以 REFINE 像素窗口精修，返回最优 (scale, dx, dy, score)。",
+      "tags": [
+        "registration",
+        "optimization",
+        "image-processing"
+      ],
+      "complexity": "complex",
+      "languageNotes": "刻意在全分辨率打分：96×144 的粗尺度会把墨线与主体边缘一起糊成色块，会偏好约 7% 的伪缩放并使裙摆偏离约 50px。"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:proof",
+      "type": "function",
+      "name": "proof",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        134,
+        142
+      ],
+      "summary": "把配准后的线稿以红色叠加层合成到主体上，输出供人工目检的 renders/preview-register.png。",
+      "tags": [
+        "visualization",
+        "image-processing",
+        "validation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        145,
+        182
+      ],
+      "summary": "配准流程编排：载入主体与墨线、拟合变换、比较所选与恒等变换的残差、按主体轮廓遮罩线稿落盘，并把变换、得分与残差写进 alignment.json。",
+      "tags": [
+        "entry-point",
+        "orchestration",
+        "data-pipeline"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:cards/001-buran/make_back.py",
+      "type": "file",
+      "name": "make_back.py",
+      "filePath": "cards/001-buran/make_back.py",
+      "summary": "001 卡背合成脚本：画金色双线边框、居中贴共享燕云 logo、用仓库内 Noto Serif 打上卡背编号，输出透明 assets/back.png。",
+      "tags": [
+        "data-pipeline",
+        "image-processing",
+        "branding",
+        "script"
+      ],
+      "complexity": "simple",
+      "languageNotes": "字体与 logo 都以 ROOT/'..'/'..' 相对定位到仓库 brand/ 目录，因此脚本不可随意外移；card-config.json 用 utf-8-sig 读以兼容 BOM。"
+    },
+    {
+      "id": "file:cards/001-buran/make_text.py",
+      "type": "file",
+      "name": "make_text.py",
+      "filePath": "cards/001-buran/make_text.py",
+      "summary": "001 卡文字层脚本（v3）：直接把交付的边框+书法合图缩放到背景尺寸另存为 assets/text.png，并生成深蓝底预览图。",
+      "tags": [
+        "data-pipeline",
+        "image-processing",
+        "script"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:cards/001-buran/prep_layers.py",
+      "type": "file",
+      "name": "prep_layers.py",
+      "filePath": "cards/001-buran/prep_layers.py",
+      "summary": "001 卡的素材归一化脚本（管线早期版本）：主体裁切放大并做饱和/对比增强、线稿按边缘能量粗配准并遮罩到轮廓、背景从快照原件一次性压暗，最后输出四层与合成预览。",
+      "tags": [
+        "data-pipeline",
+        "image-processing",
+        "asset-preparation",
+        "entry-point"
+      ],
+      "complexity": "complex",
+      "languageNotes": "使用 96×144 粗尺度边缘能量打分（后被 align_lineart.py 的全分辨率 NCC 取代）；background_orig.png 只首次复制，保证压暗不叠加。"
+    },
+    {
+      "id": "function:cards/001-buran/prep_layers.py:align_to_subject",
+      "type": "function",
+      "name": "align_to_subject",
+      "filePath": "cards/001-buran/prep_layers.py",
+      "lineRange": [
+        27,
+        55
+      ],
+      "summary": "在 96×144 粗尺度上以主体边缘能量为代价函数，暴力搜索缩放与 ±12 像素平移，返回最优配准参数并打印得分。",
+      "tags": [
+        "registration",
+        "optimization",
+        "image-processing"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "function:cards/001-buran/prep_layers.py:load_line_source",
+      "type": "function",
+      "name": "load_line_source",
+      "filePath": "cards/001-buran/prep_layers.py",
+      "lineRange": [
+        58,
+        68
+      ],
+      "summary": "按 lineart_src.png、lineart.jpeg 的优先级寻找交付线稿，透明 PNG 先垫白底再转 RGB，找不到时返回 (None, None)。",
+      "tags": [
+        "loader",
+        "image-processing",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:cards/001-buran/tune_glow.py",
+      "type": "file",
+      "name": "tune_glow.py",
+      "filePath": "cards/001-buran/tune_glow.py",
+      "summary": "在 card.blend 内调辉光的一次性脚本：重新打包贴图、插入「线辉光alpha门」Math 节点限制辉光覆盖，并抬高文字材质自发光强度后重渲 hero.png。",
+      "tags": [
+        "blender",
+        "shader",
+        "tuning",
+        "script"
+      ],
+      "complexity": "simple",
+      "languageNotes": "SKILL.md 明确不再运行它：export_web.py 会另建 web_* 材质，这些改动进不了 GLB，实测跳过导出的 GLB 逐字节一致。"
+    },
+    {
+      "id": "config:cards/005-queduzhi/alignment.json",
+      "type": "config",
+      "name": "alignment.json",
+      "filePath": "cards/005-queduzhi/alignment.json",
+      "summary": "005 卡线稿配准证据：记录源线稿路径、相似变换参数（此卡为恒等）、NCC 得分，以及所选与恒等变换的残差像素，用于事后判断配准是否可信。",
+      "tags": [
+        "configuration",
+        "image-processing",
+        "validation",
+        "record"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:cards/005-queduzhi/card-config.json",
+      "type": "config",
+      "name": "card-config.json",
+      "filePath": "cards/005-queduzhi/card-config.json",
+      "summary": "005 卡「鹊渡枝」的建卡配置，供 PIL 管线与 Blender 的 build_card.py 共读：卡名/流派文案、字体路径、背景压暗量 darken 与视差、镭射等渲染参数。",
+      "tags": [
+        "configuration",
+        "data-pipeline",
+        "rendering",
+        "content"
+      ],
+      "complexity": "simple",
+      "languageNotes": "与站点侧 site/005/card.config.js 是两份并行配置，文案改动必须两处同时改。"
+    },
+    {
+      "id": "config:cards/006-chenjin/alignment.json",
+      "type": "config",
+      "name": "alignment.json",
+      "filePath": "cards/006-chenjin/alignment.json",
+      "summary": "006 卡「塵燼」的线稿配准记录：恒等变换、NCC 得分与残差像素，说明交付线稿已与主体对齐。",
+      "tags": [
+        "configuration",
+        "image-processing",
+        "validation",
+        "record"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "config:cards/006-chenjin/card-config.json",
+      "type": "config",
+      "name": "card-config.json",
+      "filePath": "cards/006-chenjin/card-config.json",
+      "summary": "006 卡「塵燼」的建卡配置：文案、仓库内 Noto Serif 字体、darken 0.99（近乎不压暗）以及视差/镭射/辉光参数，驱动卡目录下的各管线脚本。",
+      "tags": [
+        "configuration",
+        "data-pipeline",
+        "rendering",
+        "content"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/001/card.config.js",
+      "type": "file",
+      "name": "card.config.js",
+      "filePath": "site/001/card.config.js",
+      "summary": "001 卡页面查看器配置（ES module 默认导出）：文案、六项 WebP 资源与卡壳 GLB 路径、主体/背景视差深度与镭射强度、排版安全区与表面效果。",
+      "tags": [
+        "configuration",
+        "data-model",
+        "viewer",
+        "content"
+      ],
+      "complexity": "simple",
+      "languageNotes": "由 viewer/app.js 通过 import.meta.glob 按路由取用；assets 路径指向 public 下的绝对 URL 而非文件系统路径。"
+    },
+    {
+      "id": "file:site/002/card.config.js",
+      "type": "file",
+      "name": "card.config.js",
+      "filePath": "site/002/card.config.js",
+      "summary": "002 卡「杳杳心」的查看器配置：单行主体结构，声明文案、/assets/002/ 下各层 WebP 与视差、镭射参数。",
+      "tags": [
+        "configuration",
+        "data-model",
+        "viewer",
+        "content"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/003/card.config.js",
+      "type": "file",
+      "name": "card.config.js",
+      "filePath": "site/003/card.config.js",
+      "summary": "003 卡「听云屿」的查看器配置，唯一使用多层主体的卡：subjectLayers 声明后翅/人物/前翅三层的深度、倍率与卡面位移，并额外开启 viewFan 逐片元视线比与 lineartGlow 线辉光倍率。",
+      "tags": [
+        "configuration",
+        "data-model",
+        "viewer",
+        "parallax",
+        "content"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "配置里嵌有大段调参理由注释（前层独占区仅 1.6%、后层与背景同侧反向视差等），这些注释是理解查看器深度语义的关键。"
+    },
+    {
+      "id": "file:site/005/card.config.js",
+      "type": "file",
+      "name": "card.config.js",
+      "filePath": "site/005/card.config.js",
+      "summary": "005 卡「鹊渡枝」的查看器配置：文案与 /assets/005/ 资源清单，加上与其它单层卡一致的视差深度、镭射强度与表面效果。",
+      "tags": [
+        "configuration",
+        "data-model",
+        "viewer",
+        "content"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/006/card.config.js",
+      "type": "file",
+      "name": "card.config.js",
+      "filePath": "site/006/card.config.js",
+      "summary": "006 卡「塵燼」的查看器配置：卡片文案、六层贴图路径与视差/镭射参数，卡名使用繁体字因此影响字体子集需求。",
+      "tags": [
+        "configuration",
+        "data-model",
+        "viewer",
+        "content"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/make_brand.py",
+      "type": "file",
+      "name": "make_brand.py",
+      "filePath": "site/make_brand.py",
+      "summary": "从单一 brand/logo+文字.webp 派生站点品牌资产：按 MARK_X 列把右侧文字重染为墨色或纸色生成两版页头 logo，并裁出「卄」笔刷标记作方形 favicon。",
+      "tags": [
+        "data-pipeline",
+        "branding",
+        "image-processing",
+        "script"
+      ],
+      "complexity": "simple",
+      "languageNotes": "直接改写 numpy 数组的 RGB 通道、保留 alpha，因此笔刷标记的原始金色不受影响。"
+    },
+    {
+      "id": "function:site/make_brand.py:wordmark",
+      "type": "function",
+      "name": "wordmark",
+      "filePath": "site/make_brand.py",
+      "lineRange": [
+        22,
+        29
+      ],
+      "summary": "把源 logo 右侧文字区域（MARK_X 之后）整体染成指定颜色并另存为指定文件名，用于生成深浅两套页头图。",
+      "tags": [
+        "image-processing",
+        "branding",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/make_brand.py:favicon",
+      "type": "function",
+      "name": "favicon",
+      "filePath": "site/make_brand.py",
+      "lineRange": [
+        40,
+        49
+      ],
+      "summary": "裁出笔刷标记、按 alpha 包围盒收紧、居中放进方形底板后缩到 128×128，输出透明背景 favicon.png。",
+      "tags": [
+        "image-processing",
+        "branding",
+        "asset-generation"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/make_font.py",
+      "type": "file",
+      "name": "make_font.py",
+      "filePath": "site/make_font.py",
+      "summary": "字体子集化工具：扫描模板、首页、注册表与各张卡配置里真实出现的字符，把 6.2MB 方正金隶 TTF 裁成约几十 KB 的 fzjinls.woff2，并列出会掉到备用字体的缺字。",
+      "tags": [
+        "build-system",
+        "fonts",
+        "asset-generation",
+        "cli",
+        "validation"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "依赖 fontTools.subset；Windows GBK 控制台会因缺字崩掉 print，因此显式 sys.stdout.reconfigure(encoding='utf-8')。"
+    },
+    {
+      "id": "function:site/make_font.py:collect",
+      "type": "function",
+      "name": "collect",
+      "filePath": "site/make_font.py",
+      "lineRange": [
+        47,
+        56
+      ],
+      "summary": "汇总 SOURCES 与所有 site/*/card.config.js 的字符集合并基线符号，返回（待裁字符，文案中真实出现的字符）以便区分要不要报缺字。",
+      "tags": [
+        "fonts",
+        "collection",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/make_font.py:main",
+      "type": "function",
+      "name": "main",
+      "filePath": "site/make_font.py",
+      "lineRange": [
+        59,
+        81
+      ],
+      "summary": "加载源 TTF、按候选字裁剪（保留 kern/liga/palt/vert 字形特性）、写出 woff2 并打印体积与只针对文案缺字的警告。",
+      "tags": [
+        "fonts",
+        "asset-generation",
+        "cli",
+        "entry-point"
+      ],
+      "complexity": "moderate"
+    },
+    {
+      "id": "file:site/viewer/landing.css",
+      "type": "file",
+      "name": "landing.css",
+      "filePath": "site/viewer/landing.css",
+      "summary": "首页落地页样式表：声明方正金隶子集 @font-face，用 light-dark() 与 @property 注册的可动画自定义属性实现深浅色两套配色，并排布 logo、卡列表与响应式版面。",
+      "tags": [
+        "stylesheet",
+        "frontend_style",
+        "theming",
+        "responsive"
+      ],
+      "complexity": "moderate",
+      "languageNotes": "用 @property 把 --paper 注册为 <color>，使 theme.js 通过 getComputedStyle 读到已解析的 rgb() 去写 <meta name=theme-color>；正文用 padding + margin:auto 0 代替 place-items:center 以避免长列表顶部不可滚。"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:register",
+      "type": "function",
+      "name": "register",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        130,
+        131
+      ],
+      "summary": "按拟合出的变换把墨线全分辨率重采样并贴合到原生尺寸画布，供打分与最终落盘复用。",
+      "tags": [
+        "transform",
+        "image-processing",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:archive/legacy-v1/app.js:animate",
+      "type": "function",
+      "name": "animate",
+      "filePath": "archive/legacy-v1/app.js",
+      "lineRange": [
+        103,
+        105
+      ],
+      "summary": "每帧更新：以指数平滑逼近目标旋转、写入卡壳朝向，并把相机位置换算到卡片局部空间喂给着色器的 uView 视线向量。",
+      "tags": [
+        "animation",
+        "webgl",
+        "render-loop"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:socket",
+      "type": "function",
+      "name": "socket",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        41,
+        44
+      ],
+      "summary": "为自建着色器节点组新建输入/输出接口插槽并设置默认值，是视差与镭射两个复用节点组的构建原语。",
+      "tags": [
+        "blender",
+        "shader",
+        "factory",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:parallax",
+      "type": "function",
+      "name": "parallax",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        89,
+        90
+      ],
+      "summary": "插入一个引用「视差 · 通用 UV」节点组的 Group 节点并按层设定缩放与深度，供主体、背景、文字与参考背景复用。",
+      "tags": [
+        "blender",
+        "shader",
+        "parallax",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:foil",
+      "type": "function",
+      "name": "foil",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        98,
+        99
+      ],
+      "summary": "在材质树中挂上「镭射 · 条带与木版花纹」节点组并把视差 UV 连入，为面与边提供同一套角度依赖的全息颜色。",
+      "tags": [
+        "blender",
+        "shader",
+        "holographic",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:plane_material_tex",
+      "type": "function",
+      "name": "tex",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        92,
+        93
+      ],
+      "summary": "创建读取已打包贴图的 Image 节点、按图层选择 CLIP 或 EXTEND 边界模式，并把视差 UV 接入其 Vector 输入。",
+      "tags": [
+        "blender",
+        "shader",
+        "texturing",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:bsdf",
+      "type": "function",
+      "name": "bsdf",
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "lineRange": [
+        95,
+        96
+      ],
+      "summary": "生成一个金属度 1、糙度 1、自发光清零的 Principled BSDF 基底，让印刷感贴图在金属表面上仍能保持亮度。",
+      "tags": [
+        "blender",
+        "shader",
+        "material",
+        "factory"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/make_brand.py:logo_ink",
+      "type": "function",
+      "name": "logo_ink",
+      "filePath": "site/make_brand.py",
+      "lineRange": [
+        32,
+        33
+      ],
+      "summary": "以墨色调用 wordmark 生成浅色模式页头 logo-ink.png。",
+      "tags": [
+        "branding",
+        "image-processing",
+        "wrapper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:site/make_brand.py:logo_light",
+      "type": "function",
+      "name": "logo_light",
+      "filePath": "site/make_brand.py",
+      "lineRange": [
+        36,
+        37
+      ],
+      "summary": "以纸白调调用 wordmark 生成深色模式页头 logo-light.png。",
+      "tags": [
+        "branding",
+        "image-processing",
+        "wrapper"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:_resample",
+      "type": "function",
+      "name": "_resample",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        48,
+        52
+      ],
+      "summary": "把墨线浮点栅格转回 uint8 图像并按目标尺寸重采样，供粗尺度打分与全分辨率精修共用同一条采样路径。",
+      "tags": [
+        "image-processing",
+        "resampling",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "function:cards/001-buran/align_lineart.py:_load_ink",
+      "type": "function",
+      "name": "_load_ink",
+      "filePath": "cards/001-buran/align_lineart.py",
+      "lineRange": [
+        42,
+        45
+      ],
+      "summary": "读取交付线稿 lineart_src.png，把亮度低于阈值的像素当作墨、其余归零，返回二值化墨线浮点数组。",
+      "tags": [
+        "loader",
+        "image-processing",
+        "utility"
+      ],
+      "complexity": "simple"
+    },
+    {
+      "id": "file:site/viewer/style.css",
+      "type": "file",
+      "name": "style.css",
+      "filePath": "site/viewer/style.css",
+      "summary": "共享 WebGL 查看器的全站样式表：用 light-dark() 定义一整套深浅两用颜色 token（--paper/--ink/--accent/--gold 等布局与配色变量），并给出页头、参数面板、卡面质感/景深/层参数控件与页脚的完整外观。同时实现 WebGL 不可用时的 CSS-3D 兜底卡（.fallback3d/.flipper3d/.layer3d/.foil3d 按 translateZ 分层）、多档响应式断点，以及跨页导航的 @view-transition 水墨淡入淡出。",
+      "tags": [
+        "样式表",
+        "design-tokens",
+        "主题配色",
+        "响应式布局",
+        "css-3d-fallback"
+      ],
+      "complexity": "complex",
+      "languageNotes": "把 --paper / --stage-shadow 用 @property 注册为 syntax: \"<color>\"，这样 app.js 通过 getComputedStyle 读到的是已解析的 rgb()，而不是 light-dark(...) 字面量；配色实际生效哪一套由 :root 的 color-scheme 决定，theme.js 只在用户显式选择后改写它。注释明确要求 1024px 断点与 app.js 里的 `stacked` matchMedia 保持同步，属于样式与脚本之间的隐式契约。3D 层则通过 --foil-amount 等自定义属性接收 JS 写入的参数。"
+    },
+    {
+      "id": "file:tools/card_pipeline/tune_glow.py",
+      "type": "file",
+      "name": "tune_glow.py",
+      "filePath": "tools/card_pipeline/tune_glow.py",
+      "summary": "Blender 无头微调脚本：以 `-- <卡目录>` 参数打开 card.blend，先解包→重载→重新打包所有内嵌贴图让磁盘上的新素材生效，再调强线稿扫光并把 subject.png 的 alpha 作为门控乘进混合节点的 Fac，同时把金色文字材质的自发光强度设为 0.5，最后保存文件并重渲染第 25 帧作为卡面主视觉。",
+      "tags": [
+        "blender脚本",
+        "材质调参",
+        "辉光",
+        "离线渲染",
+        "一次性脚本"
+      ],
+      "complexity": "simple",
+      "languageNotes": "纯顶层脚本，没有函数/类，导出符号为空；全部逻辑靠 bpy.ops 与按中文节点名（'限制辉光覆盖'、'线辉光alpha门'、'线描发光与镭射结果混合'、'文字原理化'）在 node_tree 里查找并改连线，因此对 card.blend 的节点命名强耦合。与 cards/001-buran/tune_glow.py 内容完全一致——脚本已收敛到 tools/，卡目录里那份是遗留副本，改动需同步。"
+    }
+  ],
+  "edges": [
+    {
+      "source": "file:site/finishes.js",
+      "target": "function:site/finishes.js:finishOf",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/finishes.js",
+      "target": "function:site/finishes.js:finishOf",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "file:site/cards.manifest.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "file:site/finishes.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "file:site/viewer/icons.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "file:site/viewer/style.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "file:site/viewer/theme.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:addGroundShadow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:addDropShadow",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:loadCardTextures",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:configUniformValues",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:renderCardNav",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:renderFinishSwatches",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:paintFinishUI",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:init",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:fallback3D",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:resize",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:setAuto",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:layoutRelief",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:paintRange",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:showLayerPanelGroups",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:setupLayerControls",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:syncLayerInputs",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:reset",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:setupFxDebug",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:setupControls",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:saveCard",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:syncSliderRanges",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:loadBundle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:turnTo",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:softNavigate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:setupSoftNav",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:animate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/app.js",
+      "target": "function:site/viewer/app.js:fail",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:loadCardTextures",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:configUniformValues",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:addGroundShadow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:addDropShadow",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:renderCardNav",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:renderFinishSwatches",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:setupControls",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:setupSoftNav",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:setupFxDebug",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:resize",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:setAuto",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/app.js:fallback3D",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/icons.js:refreshIcons",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/theme.js:mountThemeToggle",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:init",
+      "target": "function:site/viewer/theme.js:onChange",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:fallback3D",
+      "target": "function:site/viewer/app.js:showLayerPanelGroups",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:paintFinishUI",
+      "target": "function:site/finishes.js:finishOf",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setAuto",
+      "target": "function:site/viewer/icons.js:refreshIcons",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:reset",
+      "target": "function:site/viewer/app.js:syncLayerInputs",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setupControls",
+      "target": "function:site/viewer/app.js:setupLayerControls",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setupControls",
+      "target": "function:site/viewer/app.js:syncLayerInputs",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setupControls",
+      "target": "function:site/viewer/app.js:syncSliderRanges",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setupLayerControls",
+      "target": "function:site/viewer/app.js:showLayerPanelGroups",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:loadBundle",
+      "target": "function:site/viewer/app.js:loadCardTextures",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setupSoftNav",
+      "target": "function:site/viewer/app.js:loadBundle",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:setupSoftNav",
+      "target": "function:site/viewer/app.js:softNavigate",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:loadBundle",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:configUniformValues",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:turnTo",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:reset",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:renderCardNav",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:syncSliderRanges",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/app.js:softNavigate",
+      "target": "function:site/viewer/app.js:setAuto",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/icons.js",
+      "target": "file:site/viewer/icons.data.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/icons.js",
+      "target": "function:site/viewer/icons.js:refreshIcons",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/icons.js",
+      "target": "function:site/viewer/icons.js:refreshIcons",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/landing.js",
+      "target": "file:site/cards.manifest.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/landing.js",
+      "target": "file:site/viewer/landing.css",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/landing.js",
+      "target": "file:site/viewer/theme.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/landing.js",
+      "target": "function:site/viewer/theme.js:mountThemeToggle",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "file:site/viewer/icons.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:isDark",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:cssColor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:apply",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:onChange",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:mountThemeToggle",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:isDark",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:cssColor",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:onChange",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/viewer/theme.js",
+      "target": "function:site/viewer/theme.js:mountThemeToggle",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/theme.js:apply",
+      "target": "function:site/viewer/theme.js:isDark",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/theme.js:apply",
+      "target": "function:site/viewer/theme.js:cssColor",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/theme.js:mountThemeToggle",
+      "target": "function:site/viewer/theme.js:onChange",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/viewer/theme.js:mountThemeToggle",
+      "target": "function:site/viewer/icons.js:refreshIcons",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_load_subject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_load_ink",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_resample",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_place",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_ncc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:residual",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:fit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:register",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:proof",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:card_root",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:config",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:delivery",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:subject_layers",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:darken",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/prep_layers.py:enhance",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/prep_layers.py:load_line_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_load_subject",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_load_ink",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_resample",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_place",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_ncc",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:residual",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:fit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:register",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:proof",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:card_root",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:config",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:delivery",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:subject_layers",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/common.py",
+      "target": "function:tools/card_pipeline/common.py:darken",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/prep_layers.py:enhance",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/prep_layers.py:load_line_source",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tools/card_pipeline/make_back.py",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tools/card_pipeline/make_text.py",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "file:tools/card_pipeline/align_lineart.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/common.py:card_root",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/align_lineart.py",
+      "target": "function:tools/card_pipeline/common.py:config",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:tools/card_pipeline/align_lineart.py:_load_ink",
+      "target": "function:tools/card_pipeline/common.py:delivery",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:tools/card_pipeline/align_lineart.py:main",
+      "target": "function:tools/card_pipeline/common.py:delivery",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/make_back.py",
+      "target": "function:tools/card_pipeline/common.py:card_root",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/make_text.py",
+      "target": "function:tools/card_pipeline/common.py:card_root",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/make_text.py",
+      "target": "function:tools/card_pipeline/common.py:config",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/make_text.py",
+      "target": "function:tools/card_pipeline/common.py:delivery",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/common.py:card_root",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/common.py:config",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/common.py:darken",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/common.py:subject_layers",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/common.py:delivery",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_load_subject",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:_load_ink",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:fit",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:register",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:tools/card_pipeline/prep_layers.py",
+      "target": "function:tools/card_pipeline/align_lineart.py:residual",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/gen-card-pages.mjs",
+      "target": "file:site/cards.manifest.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/vite.config.js",
+      "target": "file:site/cards.manifest.js",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:site/gen-card-pages.mjs",
+      "target": "file:site/card.template.html",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/vite.config.js",
+      "target": "file:site/index.html",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:site/cards.manifest.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:site/gen-card-pages.mjs",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:site/card.template.html",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:site/viewer/app.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "config:cards/001-buran/card-config.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:site/003/card.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:tools/card_pipeline/prep_layers.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:tools/card_pipeline/make_back.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:tools/card_pipeline/align_lineart.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:tools/card_pipeline/tune_glow.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:cards/001-buran/prep_layers.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "document:brand/fonts/OFL.txt",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "file:.燕云十六声 · 典藏闪卡.qoder.site",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:AGENT.md",
+      "target": "document:README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/cards.manifest.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/gen-card-pages.mjs",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/card.template.html",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/index.html",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/app.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/theme.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/style.css",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/landing.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/landing.css",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/icons.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/viewer/icons.data.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/vite.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:tools/card_pipeline/prep_layers.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:tools/card_pipeline/make_text.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:tools/card_pipeline/make_back.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:tools/card_pipeline/align_lineart.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:tools/card_pipeline/tune_glow.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/make_brand.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:site/make_font.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "config:cards/003-tingyunyu/card-config.json",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "file:archive/legacy-v1/app.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:README.md",
+      "target": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:REDAME.md",
+      "target": "document:README.md",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:archive/legacy-v1/index.html",
+      "target": "file:archive/legacy-v1/style.css",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:archive/legacy-v1/index.html",
+      "target": "file:archive/legacy-v1/app.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:archive/legacy-v1/card-config.json",
+      "target": "file:archive/legacy-v1/app.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:archive/legacy-v1/index.html",
+      "target": "config:archive/legacy-v1/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/001-buran/card-config.json",
+      "target": "file:cards/001-buran/make_back.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/001-buran/card-config.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/001-buran/card-config.json",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/001-buran/card-config.json",
+      "target": "file:tools/card_pipeline/make_back.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/001-buran/card-config.json",
+      "target": "file:cards/001-buran/prep_layers.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/001-buran/card-config.json",
+      "target": "file:site/001/card.config.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/001-buran/verification.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/001-buran/verification.json",
+      "target": "config:cards/001-buran/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/001-buran/asset-validation.json",
+      "target": "file:cards/001-buran/prep_layers.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/001-buran/asset-validation.json",
+      "target": "config:cards/001-buran/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:tools/card_pipeline/align_lineart.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:tools/card_pipeline/prep_layers.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:tools/card_pipeline/make_text.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:tools/card_pipeline/make_back.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/card-config.json",
+      "target": "file:site/002/card.config.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/alignment.json",
+      "target": "config:cards/002-yaoyaoxin/card-config.json",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/alignment.json",
+      "target": "file:tools/card_pipeline/align_lineart.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/verification.json",
+      "target": "config:cards/002-yaoyaoxin/card-config.json",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/verification.json",
+      "target": "config:cards/002-yaoyaoxin/alignment.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/002-yaoyaoxin/verification.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/003-tingyunyu/card-config.json",
+      "target": "file:tools/card_pipeline/common.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/003-tingyunyu/card-config.json",
+      "target": "file:tools/card_pipeline/make_back.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/003-tingyunyu/card-config.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/003-tingyunyu/card-config.json",
+      "target": "file:site/003/card.config.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/003-tingyunyu/alignment.json",
+      "target": "file:tools/card_pipeline/align_lineart.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/003-tingyunyu/verification.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/003-tingyunyu/alignment.json",
+      "target": "config:cards/003-tingyunyu/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/003-tingyunyu/verification.json",
+      "target": "config:cards/003-tingyunyu/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/card.template.html",
+      "target": "file:site/viewer/app.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/card.template.html",
+      "target": "file:site/viewer/style.css",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/card.template.html",
+      "target": "file:site/viewer/theme.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/card.template.html",
+      "target": "file:site/index.html",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/card.template.html",
+      "target": "file:site/gen-card-pages.mjs",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/card.template.html",
+      "target": "file:site/finishes.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/index.html",
+      "target": "file:site/viewer/landing.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/index.html",
+      "target": "file:site/viewer/theme.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:site/package.json",
+      "target": "file:site/vite.config.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:site/package.json",
+      "target": "file:site/gen-card-pages.mjs",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:site/package.json",
+      "target": "file:site/index.html",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:site/package.json",
+      "target": "file:site/card.template.html",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:site/package.json",
+      "target": "file:site/viewer/app.js",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "type": "imports",
+      "direction": "forward",
+      "weight": 0.7
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_cycles_device",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_compositor",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_cycles_device",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_compositor",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:perimeter",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:plane",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:ring",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:socket",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:parallax",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:foil",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:plane_material_tex",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:bsdf",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:plane",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:perimeter",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:ring",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py:perimeter",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_compositor",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "target": "function:.agents/skills/holo-card-pipeline/scripts/blender_compat.py:configure_cycles_device",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "config:cards/005-queduzhi/card-config.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "config:cards/006-chenjin/card-config.json",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "configures",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:cards/001-buran/tune_glow.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:cards/001-buran/prep_layers.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:cards/001-buran/align_lineart.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:cards/001-buran/make_back.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "document:brand/fonts/OFL.txt",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:.燕云十六声 · 典藏闪卡.qoder.site",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:site/001/card.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:site/002/card.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:site/003/card.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:site/005/card.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:site/006/card.config.js",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "document:.agents/skills/holo-card-pipeline/SKILL.md",
+      "target": "file:site/make_font.py",
+      "type": "documents",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_load_subject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_load_ink",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_resample",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_place",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_ncc",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:residual",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:fit",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:register",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:proof",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_load_subject",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_load_ink",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_resample",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_place",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:_ncc",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:residual",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:fit",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:register",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:proof",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "function:cards/001-buran/align_lineart.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cards/001-buran/align_lineart.py:main",
+      "target": "function:cards/001-buran/align_lineart.py:fit",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cards/001-buran/align_lineart.py:main",
+      "target": "function:cards/001-buran/align_lineart.py:residual",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cards/001-buran/align_lineart.py:main",
+      "target": "function:cards/001-buran/align_lineart.py:proof",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cards/001-buran/align_lineart.py:fit",
+      "target": "function:cards/001-buran/align_lineart.py:_ncc",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cards/001-buran/align_lineart.py:fit",
+      "target": "function:cards/001-buran/align_lineart.py:_place",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:cards/001-buran/align_lineart.py:_place",
+      "target": "function:cards/001-buran/align_lineart.py:_resample",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "config:cards/005-queduzhi/alignment.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:cards/001-buran/align_lineart.py",
+      "target": "config:cards/006-chenjin/alignment.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/005-queduzhi/alignment.json",
+      "target": "config:cards/005-queduzhi/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "config:cards/006-chenjin/alignment.json",
+      "target": "config:cards/006-chenjin/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/005/card.config.js",
+      "target": "config:cards/005-queduzhi/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/006/card.config.js",
+      "target": "config:cards/006-chenjin/card-config.json",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/001/card.config.js",
+      "target": "file:cards/001-buran/prep_layers.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:cards/001-buran/prep_layers.py",
+      "target": "function:cards/001-buran/prep_layers.py:align_to_subject",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/prep_layers.py",
+      "target": "function:cards/001-buran/prep_layers.py:load_line_source",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:cards/001-buran/prep_layers.py",
+      "target": "function:cards/001-buran/prep_layers.py:align_to_subject",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/prep_layers.py",
+      "target": "function:cards/001-buran/prep_layers.py:load_line_source",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:cards/001-buran/make_back.py",
+      "target": "document:brand/fonts/OFL.txt",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:cards/001-buran/make_back.py",
+      "target": "file:cards/001-buran/make_text.py",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:cards/001-buran/tune_glow.py",
+      "target": "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:archive/legacy-v1/app.js",
+      "target": "function:archive/legacy-v1/app.js:init",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:archive/legacy-v1/app.js",
+      "target": "function:archive/legacy-v1/app.js:setupControls",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:archive/legacy-v1/app.js",
+      "target": "function:archive/legacy-v1/app.js:animate",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "function:archive/legacy-v1/app.js:init",
+      "target": "function:archive/legacy-v1/app.js:setupControls",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:archive/legacy-v1/app.js",
+      "target": "file:site/001/card.config.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "function:site/make_brand.py:wordmark",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "function:site/make_brand.py:logo_ink",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "function:site/make_brand.py:logo_light",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "function:site/make_brand.py:favicon",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "function:site/make_brand.py:wordmark",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "function:site/make_brand.py:favicon",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/make_brand.py:logo_ink",
+      "target": "function:site/make_brand.py:wordmark",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/make_brand.py:logo_light",
+      "target": "function:site/make_brand.py:wordmark",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/make_font.py",
+      "target": "function:site/make_font.py:collect",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/make_font.py",
+      "target": "function:site/make_font.py:main",
+      "type": "contains",
+      "direction": "forward",
+      "weight": 1
+    },
+    {
+      "source": "file:site/make_font.py",
+      "target": "function:site/make_font.py:collect",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/make_font.py",
+      "target": "function:site/make_font.py:main",
+      "type": "exports",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "function:site/make_font.py:main",
+      "target": "function:site/make_font.py:collect",
+      "type": "calls",
+      "direction": "forward",
+      "weight": 0.8
+    },
+    {
+      "source": "file:site/make_font.py",
+      "target": "file:site/003/card.config.js",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/viewer/landing.css",
+      "target": "file:site/make_font.py",
+      "type": "depends_on",
+      "direction": "forward",
+      "weight": 0.6
+    },
+    {
+      "source": "file:site/viewer/landing.css",
+      "target": "file:site/viewer/landing.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/viewer/landing.css",
+      "target": "file:site/003/card.config.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/make_brand.py",
+      "target": "file:site/viewer/landing.css",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:.燕云十六声 · 典藏闪卡.qoder.site",
+      "target": "file:site/viewer/landing.css",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    },
+    {
+      "source": "file:site/viewer/style.css",
+      "target": "file:site/viewer/app.js",
+      "type": "related",
+      "direction": "forward",
+      "weight": 0.5
+    }
+  ],
+  "layers": [
+    {
+      "id": "layer:viewer-runtime",
+      "name": "查看器运行时层",
+      "description": "共享 WebGL 查看器：app.js 用 three.js 加载 GLB 卡模并按 path route 挂载对应卡面，配合 theme/icons/landing 运行时模块、卡面与落地页两套样式表（含 CSS-3D 回退）以及 index.html、card.template.html 页面骨架。",
+      "nodeIds": [
+        "file:site/viewer/app.js",
+        "file:site/viewer/theme.js",
+        "file:site/viewer/icons.js",
+        "file:site/viewer/icons.data.js",
+        "file:site/viewer/landing.js",
+        "file:site/viewer/style.css",
+        "file:site/viewer/landing.css",
+        "file:site/index.html",
+        "file:site/card.template.html"
+      ]
+    },
+    {
+      "id": "layer:card-data-source",
+      "name": "卡数据源与挂载层",
+      "description": "站点侧的单一数据源：cards.manifest.js 以卡注册表声明每张卡的 path 路由与资源，finishes.js 集中定义珠光/银箔/烫金/原画工艺到 uFinish 的映射，site/00N/card.config.js 提供各卡页面的查看器挂载参数。",
+      "nodeIds": [
+        "file:site/cards.manifest.js",
+        "file:site/finishes.js",
+        "file:site/001/card.config.js",
+        "file:site/002/card.config.js",
+        "file:site/003/card.config.js",
+        "file:site/005/card.config.js",
+        "file:site/006/card.config.js"
+      ]
+    },
+    {
+      "id": "layer:site-build",
+      "name": "站点构建层",
+      "description": "Vite 多页站点构建：vite.config.js 注入各卡入口、gen-card-pages.mjs 依 manifest 从 card.template.html 生成页面，并由品牌图与字体生成脚本产出站点素材，统一由 site/package.json 的 npm scripts 驱动。",
+      "nodeIds": [
+        "file:site/vite.config.js",
+        "file:site/gen-card-pages.mjs",
+        "config:site/package.json",
+        "file:site/make_brand.py",
+        "file:site/make_font.py"
+      ]
+    },
+    {
+      "id": "layer:card-pipeline",
+      "name": "备层管线层",
+      "description": "离线 PIL 备层管线：线稿配准、四层素材重采样对齐、卡面文案栅格化与卡背合成，以 common.py 为共享配置底座；cards/001-buran 下是该管线的首版逐卡脚本副本。",
+      "nodeIds": [
+        "file:tools/card_pipeline/align_lineart.py",
+        "file:tools/card_pipeline/common.py",
+        "file:tools/card_pipeline/make_back.py",
+        "file:tools/card_pipeline/make_text.py",
+        "file:tools/card_pipeline/prep_layers.py",
+        "file:cards/001-buran/align_lineart.py",
+        "file:cards/001-buran/make_back.py",
+        "file:cards/001-buran/make_text.py",
+        "file:cards/001-buran/prep_layers.py"
+      ]
+    },
+    {
+      "id": "layer:blender-modeling",
+      "name": "Blender 建卡层",
+      "description": "每张卡数据管线的建模端：技能脚本在 Blender 内构建多层镭射卡体、经 blender_compat 适配版本差异后导出 GLB，tune_glow 系列脚本用于辉光材质调参与离线渲染验证。",
+      "nodeIds": [
+        "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+        "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+        "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+        "file:tools/card_pipeline/tune_glow.py",
+        "file:cards/001-buran/tune_glow.py"
+      ]
+    },
+    {
+      "id": "layer:card-data-contract",
+      "name": "卡级配置与留档层",
+      "description": "以卡为单位的 JSON 数据契约：card-config.json 作为建卡管线的单一来源，alignment/asset-validation 记录配准与素材校验结果，verification 留存 Blender 构建报告与环境快照。",
+      "nodeIds": [
+        "config:cards/001-buran/card-config.json",
+        "config:cards/001-buran/asset-validation.json",
+        "config:cards/001-buran/verification.json",
+        "config:cards/002-yaoyaoxin/card-config.json",
+        "config:cards/002-yaoyaoxin/alignment.json",
+        "config:cards/002-yaoyaoxin/verification.json",
+        "config:cards/003-tingyunyu/card-config.json",
+        "config:cards/003-tingyunyu/alignment.json",
+        "config:cards/003-tingyunyu/verification.json",
+        "config:cards/005-queduzhi/card-config.json",
+        "config:cards/005-queduzhi/alignment.json",
+        "config:cards/006-chenjin/card-config.json",
+        "config:cards/006-chenjin/alignment.json"
+      ]
+    },
+    {
+      "id": "layer:documentation",
+      "name": "文档层",
+      "description": "项目知识与操作约定：AGENT.md 与 README.md 给出目录结构、建卡发布流程与避坑指南，技能手册 SKILL.md 覆盖端到端管线，另含字体 OFL 授权与遗留说明文件。",
+      "nodeIds": [
+        "document:AGENT.md",
+        "document:README.md",
+        "document:REDAME.md",
+        "document:.agents/skills/holo-card-pipeline/SKILL.md",
+        "document:brand/fonts/OFL.txt"
+      ]
+    },
+    {
+      "id": "layer:support-archive",
+      "name": "工程支撑与归档层",
+      "description": "工具链配置与历史实现：Qoder Sites 发布描述符、Understand Anything 的本地化配置，以及 legacy-v1 旧版单页 WebGL 实现（含其卡配置、样式与入口脚本）的整包存档。",
+      "nodeIds": [
+        "file:.燕云十六声 · 典藏闪卡.qoder.site",
+        "file:archive/legacy-v1/index.html",
+        "file:archive/legacy-v1/app.js",
+        "file:archive/legacy-v1/style.css",
+        "config:archive/legacy-v1/card-config.json"
+      ]
+    }
+  ],
+  "tour": [
+    {
+      "order": 1,
+      "title": "项目总览与四条硬约定",
+      "description": "先用 README.md 建立全局地图：每张卡是一条独立的数据管线（Blender 建卡 + PIL 备层），站点是 Vite 多页应用，用共享 WebGL 查看器按 path route 挂载多张卡；目录被划成 brand / tools/card_pipeline / cards / site 四块职责。AGENT.md 则面向「没有上下文的协作者」，把「卡是数据、站是站点」「声明一张卡只有一处」「两份配置别混」「主体可多层」写成硬约定。后面每一步都能对应回这四句话。",
+      "nodeIds": [
+        "document:README.md",
+        "document:AGENT.md"
+      ]
+    },
+    {
+      "order": 2,
+      "title": "运行时入口：共享查看器",
+      "description": "本仓库没有单一 main，真正的运行时入口是 site/viewer/app.js——它以 32 条出边成为全图最宽的节点：内联全部 GLSL 着色器，装配 three.js 场景与共享 uniforms，驱动视差/箔光/星效渲染，并统管工艺切换、每层调参面板、卡间软导航与 CSS-3D 降级。card.template.html 是它依附的页面母版，页头 wordmark、#stage 展台、景深与多层参数面板都定义在那里，由第 5 步的构建脚本扇出成每张卡的页面。",
+      "nodeIds": [
+        "file:site/viewer/app.js",
+        "file:site/card.template.html"
+      ],
+      "languageLesson": "把 GLSL 以模板字符串内联在 JS 里可以省掉额外网络请求与 MIME 配置，代价是 uniform 声明要在着色器与 JS 两侧手工同步；CSS-3D 回退则在 WebGL 上下文创建失败时接管同一套 DOM 结构。"
+    },
+    {
+      "order": 3,
+      "title": "单一数据源：卡与工艺注册表",
+      "description": "落实第 1 步的「声明一张卡只有一处」：cards.manifest.js 用一个 cards 数组声明每张卡的 id、route、edition、title、act，同时被 Vite 多页入口、落地页链接和查看器顶部切换器读取，新增一张卡只需在此加一条记录。finishes.js 把珠光/银箔/烫金/原画四种工艺的 id、中文标签与写入 uFinish 的 glsl 数值集中一处，让 WebGL 主路径与 CSS-3D 回退取同一个默认值。",
+      "nodeIds": [
+        "file:site/cards.manifest.js",
+        "file:site/finishes.js"
+      ],
+      "languageLesson": "uFinish 在着色器里按阈值区间比较而非枚举判定（<0.5 保留光谱色、>=0.5 去饱和、约 2 关闭箔光、>2.5 变烫金），所以新增一种工艺是挑一个空出来的区间，而不是取下一个空闲整数。"
+    },
+    {
+      "order": 4,
+      "title": "每张卡的挂载配置",
+      "description": "第 3 步的注册表只回答「有哪些卡」，site/<NNN>/card.config.js 回答「这张卡怎么渲染」：卡面文案、六项 WebP 资源与卡壳 GLB 路径、主体与背景视差深度、镭射强度、排版安全区。003「听云屿」是唯一启用多层主体的卡——subjectLayers 声明后翅/人物/前翅三层的深度、倍率与卡面位移，并额外打开 viewFan 逐片元视线比与 lineartGlow 线辉光倍率，拿它和其余单层卡对照最能看出配置的形状。",
+      "nodeIds": [
+        "file:site/001/card.config.js",
+        "file:site/002/card.config.js",
+        "file:site/003/card.config.js",
+        "file:site/005/card.config.js",
+        "file:site/006/card.config.js"
+      ],
+      "languageLesson": "这些配置以 ES module 默认导出的形式存在（而不是 JSON），因此可以直接被 app.js import、共享常量并参与 Vite 的 tree-shaking；代价是它无法被 Python 侧脚本读取，所以建卡参数另有第 8 步的 JSON。"
+    },
+    {
+      "order": 5,
+      "title": "构建入口：模板扇出与多页",
+      "description": "构建侧入口是 gen-card-pages.mjs：site/package.json 的 dev 与 build 脚本先执行它，按第 3 步的 manifest 把 card.template.html 扇出成 site/<id>/index.html 壳页，最后打印「声明数 vs 实际写入数」作为自校验。vite.config.js 再从同一个 manifest 动态拼出 rollup 输入（落地页 index.html 加每张卡一个入口），注入 __BUILT_AT__ 构建时间戳供控制台版本戳使用，并固定 dist 输出结构。",
+      "nodeIds": [
+        "config:site/package.json",
+        "file:site/gen-card-pages.mjs",
+        "file:site/vite.config.js"
+      ]
+    },
+    {
+      "order": 6,
+      "title": "落地页与卡间软导航",
+      "description": "首页 index.html 刻意只放品牌 wordmark（ink/light 两版）与一个空的 data-card-list 占位，条目由 landing.js 在运行时从 cards.manifest.js 渲染，所以新增一张卡不必改 HTML。样式分工成两套：landing.css 用 @font-face 挂方正金隶子集、以 light-dark() 与 @property 注册的可动画自定义属性排布落地页；style.css 则定义查看器的全站颜色 token（--paper/--ink/--accent/--gold）与参数面板外观。icons.js 顺手把标记里的 <i data-lucide=\"…\"> 换成内联 svg。",
+      "nodeIds": [
+        "file:site/index.html",
+        "file:site/viewer/landing.js",
+        "file:site/viewer/landing.css",
+        "file:site/viewer/style.css",
+        "file:site/viewer/icons.js"
+      ]
+    },
+    {
+      "order": 7,
+      "title": "深浅色三态与内联图标",
+      "description": "theme.js 只做三件事：记住用户在浅色/深色/跟随系统之间的显式选择、同步 <html> 的 color-scheme 与 theme-color meta、广播变更让第 6 步的 CSS token 和第 2 步的查看器跟着重绘——配色本身全部交给 CSS 的 light-dark()。icons.data.js 是自动生成的 lucide v0.468.0 图标节点树，以 PascalCase 为键存 [\"tag\", attrs, children] 三元组，供 icons.js 递归渲染，从而彻底去掉外部图标库依赖。",
+      "nodeIds": [
+        "file:site/viewer/theme.js",
+        "file:site/viewer/icons.data.js"
+      ],
+      "languageLesson": "把主题判定放在 CSS（light-dark() + color-scheme）而非 JS 变量里，浏览器在「跟随系统」时可以零脚本完成重绘；JS 只负责持久化用户的显式覆盖，这条分工让整个站点没有一套重复的配色常量。"
+    },
+    {
+      "order": 8,
+      "title": "卡级 JSON 数据契约",
+      "description": "cards/<NNN>/ 是整条管线的真相源，四类 JSON 各司其职：card-config.json 是建卡管线的单一来源（文案、字体路径、背景压暗量 darken、视差与镭射参数、多层主体交付名），PIL 与 Blender 两侧共读；asset-validation.json 记录四层交付素材的像素体检（统一 1024×1536、RGBA 或 RGB 通道）；alignment.json 留档线稿配准的变换与 NCC 分数；verification.json 保存 Blender 版本、Cycles/GPU 环境与渲染取样帧。这正是第 1 步「两份配置别混」里那份「建卡配置」，和第 4 步的网页挂载配置互不替代。",
+      "nodeIds": [
+        "config:cards/003-tingyunyu/card-config.json",
+        "config:cards/001-buran/asset-validation.json",
+        "config:cards/002-yaoyaoxin/alignment.json",
+        "config:cards/003-tingyunyu/verification.json"
+      ]
+    },
+    {
+      "order": 9,
+      "title": "PIL 备层管线底座",
+      "description": "tools/card_pipeline 是离线备层端，处理网页拿不到的像素工作。common.py 解析 --card 卡目录、读取第 8 步的 card-config.json，并提供交付层文件名与多层主体 z 序的取值入口，使新增一张卡只写配置而不必拷脚本（fan-in 7，Python 侧最被依赖的节点）。prep_layers.py 据此归一化四层：主体按 z 序固化成扁平并集、线稿复用配准结果并裁剪轮廓、背景按 darken 压暗；make_text.py 把交付的边框+标题合图重采样到 background 尺寸，make_back.py 在 1024×1536 透明画布上画金色双线圆角边框、居中贴燕云 logo 并排印 edition 编号。",
+      "nodeIds": [
+        "file:tools/card_pipeline/common.py",
+        "file:tools/card_pipeline/prep_layers.py",
+        "file:tools/card_pipeline/make_text.py",
+        "file:tools/card_pipeline/make_back.py"
+      ]
+    },
+    {
+      "order": 10,
+      "title": "线稿配准：从单卡脚本到通用管线",
+      "description": "线稿是独立生成的描线，必须拟合回已完成的主体，这一步是全项目最容易出错的地方。001 卡的早期副本用两阶段搜索（256×384 粗尺度 + 原生分辨率精修）拟合相似变换；tools/card_pipeline/align_lineart.py 把它抽象成全分辨率 NCC 由粗到细的 scale + translate 拟合，输出 assets/lineart.png、红色叠印验证图与记录了变换和分数的 alignment.json。005「鹊渡枝」的配准证据显示变换为恒等——交付线稿本身已对齐，留档的意义是让「这次要不要配准」事后可查。",
+      "nodeIds": [
+        "file:tools/card_pipeline/align_lineart.py",
+        "file:cards/001-buran/align_lineart.py",
+        "file:cards/001-buran/prep_layers.py",
+        "config:cards/005-queduzhi/alignment.json"
+      ],
+      "languageLesson": "NCC（归一化互相关）配准属于典型的两阶段优化：先在小尺寸图上粗搜尺度、再在原生分辨率精修平移，用算力换稳定性；把 scale/dx/dy 与残差像素一起写进 JSON，是让一次性图像算法可复核的常见做法。"
+    },
+    {
+      "order": 11,
+      "title": "Blender 建卡",
+      "description": "每张卡数据管线的建模端：build_card.py 是全图 fan-in 最高的节点（13 条入边），程序化搭出视差 UV 与镭射条带两个节点组、六套材质、圆角卡面/文字/边框几何与相机灯光，读取第 8 步的 card-config.json 后保存 card.blend 并回写 verification.json。blender_compat.py 把 Blender 版本差异收在一处：统一配置 Cycles 计算设备（macOS Metal、其它平台 OptiX、失败回退 CPU），并按新旧 API 分支搭建 Fog Glow 合成器节点树，让主脚本只描述卡而不描述版本。",
+      "nodeIds": [
+        "file:.agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+        "file:.agents/skills/holo-card-pipeline/scripts/blender_compat.py"
+      ]
+    },
+    {
+      "order": 12,
+      "title": "GLB 导出与辉光微调",
+      "description": "card.blend 不能直接给网页用：export_web.py 清掉转卡动画，新建 web_front/web_edge/web_back/web_text/web_gold 五个纯色材质替换原 Blender 材质，产出第 2 步查看器加载的 GLB 卡壳。tune_glow.py 负责「素材换了但辉光不对」的迭代——以 `-- <卡目录>` 参数无头打开 card.blend，先解包→重载→重新打包所有内嵌贴图让磁盘上的新素材生效，再以 subject.png 的 alpha 作为门控乘进混合、抬高文字材质自发光；cards/001-buran 下那份是这条迭代路径的历史快照。",
+      "nodeIds": [
+        "file:.agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+        "file:tools/card_pipeline/tune_glow.py",
+        "file:cards/001-buran/tune_glow.py"
+      ]
+    },
+    {
+      "order": 13,
+      "title": "品牌资产与字体子集",
+      "description": "站点素材同样遵循「单一来源派生」：make_brand.py 从一张 brand/logo+文字.webp 按 MARK_X 列把右侧文字重染为墨色或纸色，生成第 6 步首页要用的两版页头 wordmark，并裁出「卄」笔刷标记作方形 favicon。make_font.py 扫描模板、首页、注册表与各张卡配置里真实出现的字符，把 6.2MB 方正金隶 TTF 裁成约几十 KB 的 fzjinls.woff2，并列出会掉到备用字体的缺字；Noto Serif 则依 OFL.txt 的 SIL Open Font License 随仓库分发，这是卡背与书法排版能使用内置字体的授权依据。",
+      "nodeIds": [
+        "file:site/make_brand.py",
+        "file:site/make_font.py",
+        "document:brand/fonts/OFL.txt"
+      ]
+    },
+    {
+      "order": 14,
+      "title": "端到端手册、发布与归档",
+      "description": "SKILL.md 是把前 13 步串起来的权威流程：素材归位 → 背景压暗量测定 → PIL 管线脚本 → 复用 Blender 卡壳 GLB → 站点挂载 → Vite 构建 → Qoder Sites 发布，共 7 步并附本机环境校验与避坑记录；发布结果就落在 .燕云十六声 · 典藏闪卡.qoder.site 这个单行 JSON 描述文件里（projectId/siteId/deploymentId 与最新发布产物哈希）。最后的 archive/legacy-v1 是第一代单页实现：three.js + EffectComposer/UnrealBloom 管线、自带一份 card-config.json 与底部光影滑杆，它恰好反证了第 1 步「卡是数据、站是站点」这条约定为什么值得坚持。",
+      "nodeIds": [
+        "document:.agents/skills/holo-card-pipeline/SKILL.md",
+        "file:.燕云十六声 · 典藏闪卡.qoder.site",
+        "file:archive/legacy-v1/app.js",
+        "config:archive/legacy-v1/card-config.json"
+      ]
+    }
+  ]
+}

@@ -29,6 +29,14 @@ cards/*/archive/
 # ---- 本地发布绑定（含项目/站点 ID，按需决定是否入库）----
 # .燕云十六声 · 典藏闪卡.qoder.site
 
+# ---- Understand-Anything 知识图谱 ----
+# 图谱本身入库（178 KB，别人 clone 后无需 LLM 即可用 viewer 打开）；
+# intermediate/ 与 tmp/ 是逐批中间件，.trash-*/ 是 Phase 7 挪走的垃圾，diff-overlay.json 是本地临时覆盖层。
+.ua/intermediate/
+.ua/tmp/
+.ua/.trash-*/
+.ua/diff-overlay.json
+
 # 说明：cards/*/source/ 是用户交付的原始素材，**唯一副本，删了无法重建**，务必入库。
 #       site/public/assets/ 是站点运行所需（WebP + glb），同样要入库——
 #       它让 `pnpm install && pnpm dev` 在干净克隆上直接跑起来。

@@ -1,0 +1,2164 @@
+{
+  "version": "1.0.0",
+  "gitCommitHash": "32a307d3247d01fd04ee329fc6c8c783f00712c3",
+  "generatedAt": "2026-09-25T05:46:38.510Z",
+  "files": {
+    ".agents/skills/holo-card-pipeline/SKILL.md": {
+      "filePath": ".agents/skills/holo-card-pipeline/SKILL.md",
+      "contentHash": "30c56ef0c228859b587385fd09fad0e0744073e7c7f48d6bc0f800a1aa30cdc4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 305,
+      "hasStructuralAnalysis": false
+    },
+    ".agents/skills/holo-card-pipeline/scripts/blender_compat.py": {
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/blender_compat.py",
+      "contentHash": "57950a489bce36f7e96dd91122e9c48c924871c9771aa657aca6826fead3dc6b",
+      "functions": [
+        {
+          "name": "configure_cycles_device",
+          "params": [
+            "scene"
+          ],
+          "exported": true,
+          "lineCount": 15
+        },
+        {
+          "name": "configure_compositor",
+          "params": [
+            "scene"
+          ],
+          "exported": true,
+          "lineCount": 35
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "bpy",
+          "specifiers": [
+            "bpy"
+          ]
+        }
+      ],
+      "exports": [
+        "configure_cycles_device",
+        "configure_compositor"
+      ],
+      "totalLines": 58,
+      "hasStructuralAnalysis": true
+    },
+    ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py": {
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/build_card.py",
+      "contentHash": "1eef98d25340b3c10f0ef06909d3b83fa5e521d82eb017814f8b918989809a5f",
+      "functions": [
+        {
+          "name": "node",
+          "params": [
+            "tree",
+            "typ",
+            "name",
+            "x",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "link",
+          "params": [
+            "t",
+            "a",
+            "ao",
+            "b",
+            "bi"
+          ],
+          "exported": true,
+          "lineCount": 1
+        },
+        {
+          "name": "val",
+          "params": [
+            "t",
+            "op",
+            "name",
+            "x",
+            "y",
+            "a",
+            "b"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "vec",
+          "params": [
+            "t",
+            "op",
+            "name",
+            "x",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "socket",
+          "params": [
+            "g",
+            "name",
+            "direction",
+            "kind",
+            "default"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "material",
+          "params": [
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "parallax",
+          "params": [
+            "t",
+            "name",
+            "scale",
+            "depth",
+            "x",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "tex",
+          "params": [
+            "t",
+            "key",
+            "name",
+            "p",
+            "x",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "bsdf",
+          "params": [
+            "t",
+            "name",
+            "x",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "foil",
+          "params": [
+            "t",
+            "p",
+            "x",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "move_col",
+          "params": [
+            "o",
+            "c"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "perimeter",
+          "params": [
+            "w",
+            "h",
+            "r",
+            "n"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "plane",
+          "params": [
+            "name",
+            "w",
+            "h",
+            "mat",
+            "y",
+            "thickness",
+            "coll"
+          ],
+          "exported": true,
+          "lineCount": 19
+        },
+        {
+          "name": "ring",
+          "params": [
+            "name",
+            "w",
+            "h",
+            "width",
+            "mat",
+            "y"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "aim",
+          "params": [
+            "o",
+            "p"
+          ],
+          "exported": true,
+          "lineCount": 1
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bpy",
+          "specifiers": [
+            "bpy"
+          ]
+        },
+        {
+          "source": "math",
+          "specifiers": [
+            "math"
+          ]
+        },
+        {
+          "source": "os",
+          "specifiers": [
+            "os"
+          ]
+        },
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "mathutils",
+          "specifiers": [
+            "Vector",
+            "Quaternion"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "blender_compat",
+          "specifiers": [
+            "configure_compositor",
+            "configure_cycles_device"
+          ]
+        }
+      ],
+      "exports": [
+        "node",
+        "link",
+        "val",
+        "vec",
+        "socket",
+        "material",
+        "parallax",
+        "tex",
+        "bsdf",
+        "foil",
+        "move_col",
+        "perimeter",
+        "plane",
+        "ring",
+        "aim"
+      ],
+      "totalLines": 250,
+      "hasStructuralAnalysis": true
+    },
+    ".agents/skills/holo-card-pipeline/scripts/holographic/export_web.py": {
+      "filePath": ".agents/skills/holo-card-pipeline/scripts/holographic/export_web.py",
+      "contentHash": "baec8723cc855eae7d5c553e4ea2320729d1e30403014f1e3ebc3ee18f393a39",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bpy",
+          "specifiers": [
+            "bpy"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": true
+    },
+    ".燕云十六声 · 典藏闪卡.qoder.site": {
+      "filePath": ".燕云十六声 · 典藏闪卡.qoder.site",
+      "contentHash": "7406da712cf2e953499ac3ba7c1a48444dddc2bfe87685ce0016cb60324905fc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 2,
+      "hasStructuralAnalysis": false
+    },
+    "AGENT.md": {
+      "filePath": "AGENT.md",
+      "contentHash": "41198b2967941f13e46084985820126ed3b201dac032407b394a82e2f40e2313",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 208,
+      "hasStructuralAnalysis": false
+    },
+    "README.md": {
+      "filePath": "README.md",
+      "contentHash": "32ea20ecd95fb593892ea0d3ae998eb21f32cd2ee435e3c55fe0faf17ea4bfbb",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 155,
+      "hasStructuralAnalysis": false
+    },
+    "REDAME.md": {
+      "filePath": "REDAME.md",
+      "contentHash": "346830ad6c9e9c57a1c9805c7c6ab0f53fe92adeb4213b7bf891da22f41f2a86",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 12,
+      "hasStructuralAnalysis": false
+    },
+    "archive/legacy-v1/app.js": {
+      "filePath": "archive/legacy-v1/app.js",
+      "contentHash": "d7c19c9a8a711c549b761269495acdd7cc73953d37de1884c641fc86feabe2b5",
+      "functions": [
+        {
+          "name": "$",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "backTexture",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "backArt",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "resize",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "setAuto",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "reset",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "flip",
+          "params": [],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "setupControls",
+          "params": [],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "animate",
+          "params": [
+            "now"
+          ],
+          "exported": false,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "three",
+          "specifiers": [
+            "* as THREE"
+          ]
+        },
+        {
+          "source": "three/addons/loaders/GLTFLoader.js",
+          "specifiers": [
+            "GLTFLoader"
+          ]
+        },
+        {
+          "source": "three/addons/postprocessing/EffectComposer.js",
+          "specifiers": [
+            "EffectComposer"
+          ]
+        },
+        {
+          "source": "three/addons/postprocessing/RenderPass.js",
+          "specifiers": [
+            "RenderPass"
+          ]
+        },
+        {
+          "source": "three/addons/postprocessing/UnrealBloomPass.js",
+          "specifiers": [
+            "UnrealBloomPass"
+          ]
+        },
+        {
+          "source": "three/addons/postprocessing/OutputPass.js",
+          "specifiers": [
+            "OutputPass"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 107,
+      "hasStructuralAnalysis": true
+    },
+    "archive/legacy-v1/card-config.json": {
+      "filePath": "archive/legacy-v1/card-config.json",
+      "contentHash": "f40213693664252da003e02114a89e775c9fd92182191c53ec0d38583220c87c",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": false
+    },
+    "archive/legacy-v1/index.html": {
+      "filePath": "archive/legacy-v1/index.html",
+      "contentHash": "b3ab4b0d57d4f7c672625f9279fc67388d150d5a75b83fec7e39b30feee5b64b",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "archive/legacy-v1/style.css": {
+      "filePath": "archive/legacy-v1/style.css",
+      "contentHash": "3b13538739e2c9a120fe2245547f92fadf95a9ea084846f01ed475c3d27f0d45",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 7,
+      "hasStructuralAnalysis": false
+    },
+    "brand/fonts/OFL.txt": {
+      "filePath": "brand/fonts/OFL.txt",
+      "contentHash": "cee9892f9f0cc8fe882c9e9537ee6a89621d86ee7ceaf70b02e2b2b1c25c061a",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 94,
+      "hasStructuralAnalysis": false
+    },
+    "cards/001-buran/align_lineart.py": {
+      "filePath": "cards/001-buran/align_lineart.py",
+      "contentHash": "d5b4be320b03dbc006d28252f3d1c6fc6513d4ca3690b5318fd76ff84b4bf7aa",
+      "functions": [
+        {
+          "name": "_load_subject",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "_load_ink",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "_resample",
+          "params": [
+            "ink",
+            "w",
+            "h"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "_place",
+          "params": [
+            "ink",
+            "scale",
+            "dx",
+            "dy",
+            "size"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "_ncc",
+          "params": [
+            "edge",
+            "canvas"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "residual",
+          "params": [
+            "ink",
+            "edge",
+            "solid",
+            "block",
+            "radius"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "fit",
+          "params": [
+            "edge",
+            "ink"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "register",
+          "params": [
+            "ink",
+            "scale",
+            "dx",
+            "dy"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "proof",
+          "params": [
+            "subject_img",
+            "ink",
+            "path"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": true,
+          "lineCount": 38
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image"
+          ]
+        }
+      ],
+      "exports": [
+        "_load_subject",
+        "_load_ink",
+        "_resample",
+        "_place",
+        "_ncc",
+        "residual",
+        "fit",
+        "register",
+        "proof",
+        "main"
+      ],
+      "totalLines": 187,
+      "hasStructuralAnalysis": true
+    },
+    "cards/001-buran/asset-validation.json": {
+      "filePath": "cards/001-buran/asset-validation.json",
+      "contentHash": "4e69feccea2e68a8000fd051502455005e56e654d49225670bede1ddde575867",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 34,
+      "hasStructuralAnalysis": false
+    },
+    "cards/001-buran/card-config.json": {
+      "filePath": "cards/001-buran/card-config.json",
+      "contentHash": "08c058b1889e02848659324c4aa21dbbbf56450a98c3c63dc25134086262b7e6",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": false
+    },
+    "cards/001-buran/make_back.py": {
+      "filePath": "cards/001-buran/make_back.py",
+      "contentHash": "224214dc3fa71cb4759900de596c7d321217145a18ad36339c75395c415a9ad3",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image",
+            "ImageDraw",
+            "ImageFont"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "cards/001-buran/make_text.py": {
+      "filePath": "cards/001-buran/make_text.py",
+      "contentHash": "60ebf8d2d3e78b02e2ee5ac93e34e964f0e177da4c4bc07af920a297bd7dba02",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": true
+    },
+    "cards/001-buran/prep_layers.py": {
+      "filePath": "cards/001-buran/prep_layers.py",
+      "contentHash": "0f12444995a87b44b40ef3b70a2218d29e0e943f99768795eaac628eefedeb87",
+      "functions": [
+        {
+          "name": "align_to_subject",
+          "params": [
+            "line_img",
+            "subject_img"
+          ],
+          "exported": true,
+          "lineCount": 29
+        },
+        {
+          "name": "load_line_source",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "shutil",
+          "specifiers": [
+            "shutil"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image",
+            "ImageEnhance",
+            "ImageFilter"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        }
+      ],
+      "exports": [
+        "align_to_subject",
+        "load_line_source"
+      ],
+      "totalLines": 112,
+      "hasStructuralAnalysis": true
+    },
+    "cards/001-buran/tune_glow.py": {
+      "filePath": "cards/001-buran/tune_glow.py",
+      "contentHash": "222131b4a60ec57e0643b253116e100c7293a59c6c1418e8b1ef7ce8874e960a",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bpy",
+          "specifiers": [
+            "bpy"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    },
+    "cards/001-buran/verification.json": {
+      "filePath": "cards/001-buran/verification.json",
+      "contentHash": "38f61a3ce274e5ef878f03753a8d9403877e1448fb69e15199bc53d1772c9d14",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 80,
+      "hasStructuralAnalysis": false
+    },
+    "cards/002-yaoyaoxin/alignment.json": {
+      "filePath": "cards/002-yaoyaoxin/alignment.json",
+      "contentHash": "693048fe5c51bfdbdf9ba32a70277bf7cacbea2974da757c4091d245b1fc6e1f",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "cards/002-yaoyaoxin/card-config.json": {
+      "filePath": "cards/002-yaoyaoxin/card-config.json",
+      "contentHash": "d05b63137c2addda166ea06947cf3d0b8455ce1e27de8d7113ffe15973381ebc",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 25,
+      "hasStructuralAnalysis": false
+    },
+    "cards/002-yaoyaoxin/verification.json": {
+      "filePath": "cards/002-yaoyaoxin/verification.json",
+      "contentHash": "0825d71d09a7eac7502d988b035576e4d4ca800de44664e96ea37a9d2d016ad4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 80,
+      "hasStructuralAnalysis": false
+    },
+    "cards/003-tingyunyu/alignment.json": {
+      "filePath": "cards/003-tingyunyu/alignment.json",
+      "contentHash": "aa05b439eef5ab3260c94424a124263a4a7938decd89883837ee017ac227d3d4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "cards/003-tingyunyu/card-config.json": {
+      "filePath": "cards/003-tingyunyu/card-config.json",
+      "contentHash": "99c4747303420fdbabcf0098d280bfea34d9152cf1f0e54d0fd8e549a8d56bc1",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 28,
+      "hasStructuralAnalysis": false
+    },
+    "cards/003-tingyunyu/verification.json": {
+      "filePath": "cards/003-tingyunyu/verification.json",
+      "contentHash": "0825d71d09a7eac7502d988b035576e4d4ca800de44664e96ea37a9d2d016ad4",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 80,
+      "hasStructuralAnalysis": false
+    },
+    "cards/005-queduzhi/alignment.json": {
+      "filePath": "cards/005-queduzhi/alignment.json",
+      "contentHash": "7fe83561e0c88d1b56c8ef57d992de085db8cb99df5cb65f71e9de1743480be3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "cards/005-queduzhi/card-config.json": {
+      "filePath": "cards/005-queduzhi/card-config.json",
+      "contentHash": "07ecad0b7a2e02a941da154ce2829496cf41599a10589e1b6c3113c6b4c6e2e3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 22,
+      "hasStructuralAnalysis": false
+    },
+    "cards/006-chenjin/alignment.json": {
+      "filePath": "cards/006-chenjin/alignment.json",
+      "contentHash": "4bc16b04bea1e3ab3fa3d18d2a62a6e626d5da170e64d6be7b3bc0bafbd6b67d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 15,
+      "hasStructuralAnalysis": false
+    },
+    "cards/006-chenjin/card-config.json": {
+      "filePath": "cards/006-chenjin/card-config.json",
+      "contentHash": "608a3b77ec8efc2e8bd2d292f30510f74fe886a3fb00fff7083ee86556217e06",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 21,
+      "hasStructuralAnalysis": false
+    },
+    "site/001/card.config.js": {
+      "filePath": "site/001/card.config.js",
+      "contentHash": "a4acc91bef5bd0e0dd64b021bd600a04927c51348d1b5f0a0b3b26d745c0cb83",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "site/002/card.config.js": {
+      "filePath": "site/002/card.config.js",
+      "contentHash": "680c3d2f4b74ebaf4f41bfba6f3f921b36f5e67faf0fc81b6ec8123da805831d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "site/003/card.config.js": {
+      "filePath": "site/003/card.config.js",
+      "contentHash": "eaac96c14a3ee30baec24b2f6bc788b32abb0710a56b8ce8c2c4eac9911e64b3",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 56,
+      "hasStructuralAnalysis": true
+    },
+    "site/005/card.config.js": {
+      "filePath": "site/005/card.config.js",
+      "contentHash": "a9bc6d03d6fcea7d08cb42ff779ccf41383fa28aeba52d3adb00aaa907250f7d",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "site/006/card.config.js": {
+      "filePath": "site/006/card.config.js",
+      "contentHash": "5377a4d9ac01d4d863301579750aef3b43c045dc69dbd882c264293192c97411",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 35,
+      "hasStructuralAnalysis": true
+    },
+    "site/card.template.html": {
+      "filePath": "site/card.template.html",
+      "contentHash": "b99bbd53c4ce69b5e9d513a5b1aadb9c90ae6f29d0abe9bb4c2f0b18844f6b00",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 349,
+      "hasStructuralAnalysis": false
+    },
+    "site/cards.manifest.js": {
+      "filePath": "site/cards.manifest.js",
+      "contentHash": "dc59a2d2e573e5b4bcd9366dd23c9055517dfa46f086d4853b9acf8ed098d2e7",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "cards"
+      ],
+      "totalLines": 51,
+      "hasStructuralAnalysis": true
+    },
+    "site/finishes.js": {
+      "filePath": "site/finishes.js",
+      "contentHash": "36f01f2e26da980651616dce85563db26f97e71d5853799a19d347ba9ee49c7c",
+      "functions": [
+        {
+          "name": "finishOf",
+          "params": [
+            "id"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "finishes",
+        "defaultFinish",
+        "finishOf"
+      ],
+      "totalLines": 30,
+      "hasStructuralAnalysis": true
+    },
+    "site/gen-card-pages.mjs": {
+      "filePath": "site/gen-card-pages.mjs",
+      "contentHash": "66c033ac88842aa1009d24cb91e71fcc3c812c601a10d00c274500338dcd6744",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "node:fs/promises",
+          "specifiers": [
+            "readFile",
+            "writeFile",
+            "mkdir"
+          ]
+        },
+        {
+          "source": "node:url",
+          "specifiers": [
+            "fileURLToPath"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "dirname",
+            "join"
+          ]
+        },
+        {
+          "source": "./cards.manifest.js",
+          "specifiers": [
+            "cards"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 27,
+      "hasStructuralAnalysis": true
+    },
+    "site/index.html": {
+      "filePath": "site/index.html",
+      "contentHash": "8940cce2bd417efec93c9039db0be09c569f247dbffc6ff2401e77a8fd981a59",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 52,
+      "hasStructuralAnalysis": false
+    },
+    "site/make_brand.py": {
+      "filePath": "site/make_brand.py",
+      "contentHash": "a7332f005e9cd338d7edf9c98139285d03342e6ec42a69303fc7326629f32af5",
+      "functions": [
+        {
+          "name": "wordmark",
+          "params": [
+            "color",
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 8
+        },
+        {
+          "name": "logo_ink",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "logo_light",
+          "params": [],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "favicon",
+          "params": [],
+          "exported": true,
+          "lineCount": 10
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        }
+      ],
+      "exports": [
+        "wordmark",
+        "logo_ink",
+        "logo_light",
+        "favicon"
+      ],
+      "totalLines": 57,
+      "hasStructuralAnalysis": true
+    },
+    "site/make_font.py": {
+      "filePath": "site/make_font.py",
+      "contentHash": "0eca020fa18d7550e257f66c951e144f746085f07e27fdea8fc1f93748b6d784",
+      "functions": [
+        {
+          "name": "collect",
+          "params": [],
+          "exported": true,
+          "lineCount": 10
+        },
+        {
+          "name": "main",
+          "params": [],
+          "returnType": "int",
+          "exported": true,
+          "lineCount": 23
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "string",
+          "specifiers": [
+            "string"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "fontTools",
+          "specifiers": [
+            "subset"
+          ]
+        }
+      ],
+      "exports": [
+        "collect",
+        "main"
+      ],
+      "totalLines": 86,
+      "hasStructuralAnalysis": true
+    },
+    "site/package.json": {
+      "filePath": "site/package.json",
+      "contentHash": "e08893648b96706470cedb42582429c3f46e82bbf9858462adae79ad87754a49",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 19,
+      "hasStructuralAnalysis": false
+    },
+    "site/viewer/app.js": {
+      "filePath": "site/viewer/app.js",
+      "contentHash": "ad387e3675caf5643590cf2dc69b573d69e990e82269df3417669fe1312aacd7",
+      "functions": [
+        {
+          "name": "$",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "readShadowColor",
+          "params": [],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "paintStagePalette",
+          "params": [],
+          "exported": false,
+          "lineCount": 9
+        },
+        {
+          "name": "addGroundShadow",
+          "params": [
+            "cardHeight"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "addDropShadow",
+          "params": [
+            "cardWidth",
+            "cardHeight"
+          ],
+          "exported": false,
+          "lineCount": 23
+        },
+        {
+          "name": "loadCardTextures",
+          "params": [
+            "cfg"
+          ],
+          "exported": false,
+          "lineCount": 41
+        },
+        {
+          "name": "configUniformValues",
+          "params": [
+            "cfg",
+            "pack"
+          ],
+          "exported": false,
+          "lineCount": 46
+        },
+        {
+          "name": "applyCardDom",
+          "params": [
+            "cfg"
+          ],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "renderCardNav",
+          "params": [],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "renderFinishSwatches",
+          "params": [],
+          "exported": false,
+          "lineCount": 18
+        },
+        {
+          "name": "paintFinishUI",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 11
+        },
+        {
+          "name": "notice",
+          "params": [
+            "message"
+          ],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "init",
+          "params": [],
+          "exported": false,
+          "lineCount": 192
+        },
+        {
+          "name": "fallback3D",
+          "params": [
+            "error"
+          ],
+          "exported": false,
+          "lineCount": 222
+        },
+        {
+          "name": "resize",
+          "params": [],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "setAuto",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "setFinish",
+          "params": [
+            "value"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "faceLabels",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "flip",
+          "params": [],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "layoutRelief",
+          "params": [],
+          "exported": false,
+          "lineCount": 13
+        },
+        {
+          "name": "paintRange",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 10
+        },
+        {
+          "name": "updateInput",
+          "params": [
+            "id",
+            "name"
+          ],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "availableLayers",
+          "params": [],
+          "exported": false,
+          "lineCount": 5
+        },
+        {
+          "name": "showLayerPanelGroups",
+          "params": [
+            "preferred"
+          ],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "setupLayerTabs",
+          "params": [],
+          "exported": false,
+          "lineCount": 6
+        },
+        {
+          "name": "setupLayerControls",
+          "params": [],
+          "exported": false,
+          "lineCount": 19
+        },
+        {
+          "name": "syncLayerInputs",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "reset",
+          "params": [],
+          "exported": false,
+          "lineCount": 34
+        },
+        {
+          "name": "toggleSettings",
+          "params": [],
+          "exported": false,
+          "lineCount": 8
+        },
+        {
+          "name": "setupFxDebug",
+          "params": [],
+          "exported": false,
+          "lineCount": 70
+        },
+        {
+          "name": "setupControls",
+          "params": [],
+          "exported": false,
+          "lineCount": 125
+        },
+        {
+          "name": "saveCard",
+          "params": [],
+          "exported": false,
+          "lineCount": 42
+        },
+        {
+          "name": "syncSliderRanges",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "cardIdOf",
+          "params": [
+            "url"
+          ],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "routeOf",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 1
+        },
+        {
+          "name": "loadBundle",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 17
+        },
+        {
+          "name": "turnTo",
+          "params": [
+            "to",
+            "ms"
+          ],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "softNavigate",
+          "params": [
+            "id"
+          ],
+          "exported": false,
+          "lineCount": 52
+        },
+        {
+          "name": "setupSoftNav",
+          "params": [],
+          "exported": false,
+          "lineCount": 21
+        },
+        {
+          "name": "animate",
+          "params": [
+            "now"
+          ],
+          "exported": false,
+          "lineCount": 26
+        },
+        {
+          "name": "fail",
+          "params": [
+            "message"
+          ],
+          "exported": false,
+          "lineCount": 14
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "three",
+          "specifiers": [
+            "* as THREE"
+          ]
+        },
+        {
+          "source": "three/addons/loaders/GLTFLoader.js",
+          "specifiers": [
+            "GLTFLoader"
+          ]
+        },
+        {
+          "source": "./style.css",
+          "specifiers": []
+        },
+        {
+          "source": "./icons.js",
+          "specifiers": [
+            "refreshIcons"
+          ]
+        },
+        {
+          "source": "./theme.js",
+          "specifiers": [
+            "cssColor",
+            "mountThemeToggle",
+            "onChange"
+          ]
+        },
+        {
+          "source": "../cards.manifest.js",
+          "specifiers": [
+            "cards"
+          ]
+        },
+        {
+          "source": "../finishes.js",
+          "specifiers": [
+            "finishes",
+            "finishOf",
+            "defaultFinish"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 1576,
+      "hasStructuralAnalysis": true
+    },
+    "site/viewer/icons.data.js": {
+      "filePath": "site/viewer/icons.data.js",
+      "contentHash": "60c2a716cf46dfd7016db1c25d11d0bde35b68f4a1aad78079cc53c6f1bf0381",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [
+        "ICON_TREES"
+      ],
+      "totalLines": 365,
+      "hasStructuralAnalysis": true
+    },
+    "site/viewer/icons.js": {
+      "filePath": "site/viewer/icons.js",
+      "contentHash": "33a20c117da4f451639a8da45c155ff4fdf09a3c676bd9d62dc22d6421c4ae2b",
+      "functions": [
+        {
+          "name": "renderIconNode",
+          "params": [
+            "node"
+          ],
+          "exported": false,
+          "lineCount": 7
+        },
+        {
+          "name": "refreshIcons",
+          "params": [],
+          "exported": true,
+          "lineCount": 16
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./icons.data.js",
+          "specifiers": [
+            "ICON_TREES"
+          ]
+        }
+      ],
+      "exports": [
+        "refreshIcons"
+      ],
+      "totalLines": 32,
+      "hasStructuralAnalysis": true
+    },
+    "site/viewer/landing.css": {
+      "filePath": "site/viewer/landing.css",
+      "contentHash": "11cfbe60e11406d2d560f6c6e42075b2cc71eba8fe527a83302cb259d2ece082",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 195,
+      "hasStructuralAnalysis": false
+    },
+    "site/viewer/landing.js": {
+      "filePath": "site/viewer/landing.js",
+      "contentHash": "6833fd278890d0a67d2e9b3813a55cae9887bdb8852fadc0f3f4c65d73c60f03",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./landing.css",
+          "specifiers": []
+        },
+        {
+          "source": "../cards.manifest.js",
+          "specifiers": [
+            "cards"
+          ]
+        },
+        {
+          "source": "./theme.js",
+          "specifiers": [
+            "mountThemeToggle"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 26,
+      "hasStructuralAnalysis": true
+    },
+    "site/viewer/style.css": {
+      "filePath": "site/viewer/style.css",
+      "contentHash": "6e05dc8400b87784e53ee4dbf282f1da675eb146428f14c588ec232c962d0c12",
+      "functions": [],
+      "classes": [],
+      "imports": [],
+      "exports": [],
+      "totalLines": 1122,
+      "hasStructuralAnalysis": false
+    },
+    "site/viewer/theme.js": {
+      "filePath": "site/viewer/theme.js",
+      "contentHash": "39e99e0d5cd454f8d41e44911c0ed05f61db691992455422a4fa4ccdb72f08bc",
+      "functions": [
+        {
+          "name": "isDark",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "cssColor",
+          "params": [
+            "name"
+          ],
+          "exported": true,
+          "lineCount": 3
+        },
+        {
+          "name": "apply",
+          "params": [],
+          "exported": false,
+          "lineCount": 14
+        },
+        {
+          "name": "toggle",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "followSystem",
+          "params": [],
+          "exported": false,
+          "lineCount": 4
+        },
+        {
+          "name": "onChange",
+          "params": [
+            "fn"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "mountThemeToggle",
+          "params": [
+            "button"
+          ],
+          "exported": true,
+          "lineCount": 19
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "./icons.js",
+          "specifiers": [
+            "refreshIcons"
+          ]
+        }
+      ],
+      "exports": [
+        "isDark",
+        "cssColor",
+        "onChange",
+        "mountThemeToggle"
+      ],
+      "totalLines": 103,
+      "hasStructuralAnalysis": true
+    },
+    "site/vite.config.js": {
+      "filePath": "site/vite.config.js",
+      "contentHash": "0dd586549174fa8f0cf40ca00810fa6900a918971d22d55678c9ae1150005524",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "vite",
+          "specifiers": [
+            "defineConfig"
+          ]
+        },
+        {
+          "source": "node:path",
+          "specifiers": [
+            "resolve"
+          ]
+        },
+        {
+          "source": "./cards.manifest.js",
+          "specifiers": [
+            "cards"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 42,
+      "hasStructuralAnalysis": true
+    },
+    "tools/card_pipeline/align_lineart.py": {
+      "filePath": "tools/card_pipeline/align_lineart.py",
+      "contentHash": "b2f55a11c3d1d9e8564d6de62ca9450142bf207cfe3d5064040e49ea7019b69d",
+      "functions": [
+        {
+          "name": "_load_subject",
+          "params": [],
+          "exported": true,
+          "lineCount": 7
+        },
+        {
+          "name": "_load_ink",
+          "params": [],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "_resample",
+          "params": [
+            "ink",
+            "w",
+            "h"
+          ],
+          "exported": true,
+          "lineCount": 5
+        },
+        {
+          "name": "_place",
+          "params": [
+            "ink",
+            "scale",
+            "dx",
+            "dy",
+            "size"
+          ],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "_ncc",
+          "params": [
+            "edge",
+            "canvas"
+          ],
+          "exported": true,
+          "lineCount": 6
+        },
+        {
+          "name": "residual",
+          "params": [
+            "ink",
+            "edge",
+            "solid",
+            "block",
+            "radius"
+          ],
+          "exported": true,
+          "lineCount": 22
+        },
+        {
+          "name": "fit",
+          "params": [
+            "edge",
+            "ink"
+          ],
+          "exported": true,
+          "lineCount": 27
+        },
+        {
+          "name": "register",
+          "params": [
+            "ink",
+            "scale",
+            "dx",
+            "dy"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "proof",
+          "params": [
+            "subject_img",
+            "ink",
+            "path"
+          ],
+          "exported": true,
+          "lineCount": 9
+        },
+        {
+          "name": "main",
+          "params": [],
+          "exported": true,
+          "lineCount": 38
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image"
+          ]
+        },
+        {
+          "source": "common",
+          "specifiers": [
+            "card_root",
+            "config",
+            "delivery"
+          ]
+        }
+      ],
+      "exports": [
+        "_load_subject",
+        "_load_ink",
+        "_resample",
+        "_place",
+        "_ncc",
+        "residual",
+        "fit",
+        "register",
+        "proof",
+        "main"
+      ],
+      "totalLines": 192,
+      "hasStructuralAnalysis": true
+    },
+    "tools/card_pipeline/common.py": {
+      "filePath": "tools/card_pipeline/common.py",
+      "contentHash": "5d8e0726a4a917b0ffb63e6de3eb3df7de4bc5cd1114d420559865ec4b3c3be7",
+      "functions": [
+        {
+          "name": "card_root",
+          "params": [],
+          "exported": true,
+          "lineCount": 12
+        },
+        {
+          "name": "config",
+          "params": [
+            "root"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "delivery",
+          "params": [
+            "cfg",
+            "layer"
+          ],
+          "exported": true,
+          "lineCount": 2
+        },
+        {
+          "name": "subject_layers",
+          "params": [
+            "cfg"
+          ],
+          "exported": true,
+          "lineCount": 20
+        },
+        {
+          "name": "darken",
+          "params": [
+            "cfg"
+          ],
+          "exported": true,
+          "lineCount": 3
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        }
+      ],
+      "exports": [
+        "card_root",
+        "config",
+        "delivery",
+        "subject_layers",
+        "darken"
+      ],
+      "totalLines": 70,
+      "hasStructuralAnalysis": true
+    },
+    "tools/card_pipeline/make_back.py": {
+      "filePath": "tools/card_pipeline/make_back.py",
+      "contentHash": "13322c4995a09e4284eab61c20440e6f91a40ca171fdf3b53f8604ee264c236e",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "json",
+          "specifiers": [
+            "json"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image",
+            "ImageDraw",
+            "ImageFont"
+          ]
+        },
+        {
+          "source": "common",
+          "specifiers": [
+            "card_root"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 33,
+      "hasStructuralAnalysis": true
+    },
+    "tools/card_pipeline/make_text.py": {
+      "filePath": "tools/card_pipeline/make_text.py",
+      "contentHash": "d28285a21a77aa64c0710b7f6c4e81dea5569acdb8930df0e8d182b57885794b",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image"
+          ]
+        },
+        {
+          "source": "common",
+          "specifiers": [
+            "card_root",
+            "config",
+            "delivery"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 24,
+      "hasStructuralAnalysis": true
+    },
+    "tools/card_pipeline/prep_layers.py": {
+      "filePath": "tools/card_pipeline/prep_layers.py",
+      "contentHash": "fe101098a8afc444738a271ac5841a2b7a4d32aa6ff11825ceb2f4ff72bae6a9",
+      "functions": [
+        {
+          "name": "enhance",
+          "params": [
+            "im"
+          ],
+          "exported": true,
+          "lineCount": 4
+        },
+        {
+          "name": "load_line_source",
+          "params": [],
+          "exported": true,
+          "lineCount": 11
+        }
+      ],
+      "classes": [],
+      "imports": [
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        },
+        {
+          "source": "numpy",
+          "specifiers": [
+            "np"
+          ]
+        },
+        {
+          "source": "PIL",
+          "specifiers": [
+            "Image",
+            "ImageEnhance"
+          ]
+        },
+        {
+          "source": "align_lineart",
+          "specifiers": [
+            "_load_ink",
+            "_load_subject",
+            "align_fit",
+            "align_register",
+            "align_residual"
+          ]
+        },
+        {
+          "source": "common",
+          "specifiers": [
+            "card_root",
+            "config",
+            "darken",
+            "delivery",
+            "subject_layers"
+          ]
+        }
+      ],
+      "exports": [
+        "enhance",
+        "load_line_source"
+      ],
+      "totalLines": 96,
+      "hasStructuralAnalysis": true
+    },
+    "tools/card_pipeline/tune_glow.py": {
+      "filePath": "tools/card_pipeline/tune_glow.py",
+      "contentHash": "222131b4a60ec57e0643b253116e100c7293a59c6c1418e8b1ef7ce8874e960a",
+      "functions": [],
+      "classes": [],
+      "imports": [
+        {
+          "source": "bpy",
+          "specifiers": [
+            "bpy"
+          ]
+        },
+        {
+          "source": "sys",
+          "specifiers": [
+            "sys"
+          ]
+        },
+        {
+          "source": "pathlib",
+          "specifiers": [
+            "Path"
+          ]
+        }
+      ],
+      "exports": [],
+      "totalLines": 48,
+      "hasStructuralAnalysis": true
+    }
+  }
+}
