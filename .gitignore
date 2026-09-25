@@ -29,6 +29,11 @@ cards/*/archive/
 # ---- 本地发布绑定（含项目/站点 ID，按需决定是否入库）----
 # .燕云十六声 · 典藏闪卡.qoder.site
 
+# ---- 方正金隶原库（商用授权另议，不推公开仓库）----
+# 整站正文子集 site/public/fonts/*.woff2 已入库，站点运行不依赖原库；
+# 只有重跑 site/make_font.py 才需要它——本机这份是唯一副本，删了要重新弄。
+brand/fonts/FZJinLS-B-GB.ttf
+
 # ---- Understand-Anything 知识图谱 ----
 # 图谱本身入库（178 KB，别人 clone 后无需 LLM 即可用 viewer 打开）；
 # intermediate/ 与 tmp/ 是逐批中间件，.trash-*/ 是 Phase 7 挪走的垃圾，diff-overlay.json 是本地临时覆盖层。
