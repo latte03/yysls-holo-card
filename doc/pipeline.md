@@ -5,7 +5,7 @@
 
 ## 共享卡壳：新卡不碰 Blender
 
-**`card.glb` 是共享卡壳，新卡可以完全不碰 Blender。** 六张卡（001/002/003/005/006/007）的
+**`card.glb` 是共享卡壳，新卡可以完全不碰 Blender。** 八张卡（001/002/003/005/006/007/008/009）的
 `site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，23668 字节，
 glTF 里没有 image chunk）：它只有 3 个 mesh 和 `web_front/web_edge/web_back/web_gold` 四个材质名，
 subject/background/text/lineart/back 五层贴图全部由 `site/viewer/app.js` 从 `/assets/<id>/*.webp`
@@ -87,7 +87,7 @@ PNG 原件留在 `cards/*/assets/`。
 ## 卡背编号只用仓库内字体
 
 `brand/fonts/NotoSerif-SemiBold.ttf`（SIL OFL 1.1，许可证同目录 `OFL.txt`）。`make_back.py` 用
-`ROOT / '..' / '..' / 'brand' / 'fonts' / ...` 相对定位，六张卡（含已定稿的 001-003）都靠它，
+`ROOT / '..' / '..' / 'brand' / 'fonts' / ...` 相对定位，八张卡（含已定稿的 001-003）都靠它，
 换机不漂。**不要**改回系统字体路径——mac 的 `Songti.ttc` 与 Windows 的 `simsun.ttc` 都是随
 操作系统的授权字体，不能提交进公开仓库，而且换机就渲染不出来。权重用 SemiBold（用户偏好更粗
 的编号，Regular 与原 Songti 更接近但偏细），墨迹 y 区间 1321-1342，与 Regular 只差 1px，无需调坐标。

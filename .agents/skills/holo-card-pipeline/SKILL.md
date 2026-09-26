@@ -138,7 +138,7 @@ python3 tools/card_pipeline/make_back.py   --card cards/00X-<name>   # 卡背（
 
 ## 4. 卡壳 GLB（默认：复用共享卡壳，不跑 Blender）
 
-六张卡的 `site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，
+八张卡的 `site/public/assets/<id>/card.glb` md5 逐字节相同（`5079d522d4ddc9c3a3c0a02e4c45f9cb`，
 23668 字节，glTF 无 image chunk）——它只是卡壳几何（3 mesh + `web_front/web_edge/web_back/web_gold`
 四个材质名），五层贴图全部由 `site/viewer/app.js` 从 `/assets/<id>/*.webp` 加载后在着色器里合成。
 所以新卡直接复用：
@@ -234,7 +234,7 @@ for n in ('subject','subject_back','subject_mid','subject_front','background','t
 ```
 
 `cards.manifest.js` 加一条（**入口、首页链接、页头卡序全由它驱动，不用改 HTML**）：
-首页那段 `<li>`（当前六行，数量跟着清单走别写死）由 `gen-card-pages.mjs` 在 `pnpm dev` / `pnpm build` 前写进 `site/index.html` 的
+首页那段 `<li>`（数量跟着清单走，别在这里写死）由 `gen-card-pages.mjs` 在 `pnpm dev` / `pnpm build` 前写进 `site/index.html` 的
 `<!-- card-list:start/end -->` 标记之间——**那段别手写也别手改**，只改 manifest。
 
 ```js

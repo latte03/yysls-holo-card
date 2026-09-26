@@ -59,6 +59,20 @@ export const cards = [
     title: '荼喏',
     act: '第七弹',
   },
+  {
+    id: '008',
+    route: '/008/index.html',
+    edition: 'No.008',
+    title: '梧祈涵',
+    act: '第八弹',
+  },
+  {
+    id: '009',
+    route: '/009/index.html',
+    edition: 'No.009',
+    title: '斯哈哈哈',
+    act: '第九弹',
+  },
 ];
 
 export default cards;

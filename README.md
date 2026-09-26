@@ -91,6 +91,8 @@ pnpm preview       # 本地预览构建产物（预览只看 dist，壳页源在
 | `/005/index.html` | 第五弹 · 鹊渡枝 |
 | `/006/index.html` | 第六弹 · 塵燼 |
 | `/007/index.html` | 第七弹 · 荼喏 |
+| `/008/index.html` | 第八弹 · 梧祈涵 |
+| `/009/index.html` | 第九弹 · 斯哈哈哈 |
 
 **没有 004**：第四弹从未立项，卡号就是跳过去的，别去"补"它。卡号以
 [`site/cards.manifest.js`](site/cards.manifest.js) 为准，本表只是给人看的副本。

@@ -22,8 +22,8 @@ export default {
   // y 0.024 ≈ 37px：让发梢让开顶部月相饰件。x 留 0——人物的视觉中心问题在首页缩略图，
   // 那是在 `site/make_landing_thumbs.py` 的贴图位置上调，别在卡面挪。
   "subjectLayers": {
-    "mid": { "depth": 0.55, "scale": 1, "offset": [0, 0.024] },
-    "front": { "src": "/assets/007/subject_front.webp", "label": "花丛", "depth": 1.2, "scale": 1, "offset": [0, 0] }
+    "mid": { "depth": 0.55, "scale": 1, "offset": [0, 0.08] },
+    "front": { "src": "/assets/007/subject_front.webp", "label": "花丛", "depth": 1.2, "scale": 1, "offset": [0, 0.052] }
   },
   "parameters": {
     "subjectScale": 1.0,

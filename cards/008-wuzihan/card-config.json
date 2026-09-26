@@ -1,0 +1,20 @@
+{
+  "mode": "holographic",
+  "title": "梧祈涵",
+  "subtitle": "传说 · SSR",
+  "technique": "百业 · 初觉 · 流派 · 鸢樽",
+  "edition": "No.008",
+  "collection": "燕云十六声 · 典藏闪卡 第八弹",
+  "description": "燕云十六声典藏系列第八弹 · 传说 SSR No.008。",
+  "font": "brand/fonts/NotoSerif-SemiBold.ttf",
+  "darken": 0.92,
+  "parameters": {
+    "subjectScale": 1.0,
+    "subjectDepth": 0.55,
+    "backgroundDepth": -0.45,
+    "foil": 1.0,
+    "particles": 1.0,
+    "glow": 0.85
+  },
+  "safeArea": {"scale": 1.0, "offset": [0, 0]}
+}

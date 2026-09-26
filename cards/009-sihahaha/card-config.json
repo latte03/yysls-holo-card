@@ -1,0 +1,20 @@
+{
+  "mode": "holographic",
+  "title": "斯哈哈哈",
+  "subtitle": "传说 · SSR",
+  "technique": "百业 · 初觉 · 流派 · 无名",
+  "edition": "No.009",
+  "collection": "燕云十六声 · 典藏闪卡 第九弹",
+  "description": "燕云十六声典藏系列第九弹 · 传说 SSR No.009。",
+  "font": "brand/fonts/NotoSerif-SemiBold.ttf",
+  "darken": 0.99,
+  "parameters": {
+    "subjectScale": 0.76,
+    "subjectDepth": 0.55,
+    "backgroundDepth": -0.45,
+    "foil": 1.0,
+    "particles": 1.0,
+    "glow": 0.85
+  },
+  "safeArea": {"scale": 1.0, "offset": [0, 0]}
+}
