@@ -1399,7 +1399,10 @@ function syncSliderRanges() {
   } else {
     $("depth").min = "-0.6";
     $("depth").max = "0.9";
-    $("scale").min = "0.95";
+    // 下限必须罩得住各卡 config 里的 subjectScale（009 宽袖版用 0.76 放大）：
+    // setupControls 是「uniform → 滑杆 → 再读回 uniform」一圈，滑杆夹掉的值会反过来
+    // 覆盖 config 的值，min 抬得比它高就等于配置被静默作废。
+    $("scale").min = "0.55";
     $("scale").max = "1.35";
   }
 }
